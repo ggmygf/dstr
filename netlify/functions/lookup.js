@@ -5,14 +5,7 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
-  const code = event.queryStringParameters.code; // Get the last part of the path
-
-  if (!/^\d{5}$/.test(code)) {
-    return {
-      statusCode: 400,
-      body: 'Invalid code format.',
-    };
-  }
+  const code = event.path.split('/').pop(); // Get the last part of the pa
 
   try {
     const client = await pool.connect();
