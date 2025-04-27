@@ -5,7 +5,7 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
-  const code = event.path.split('/').pop(); // Get the last part of the pa
+  const code = event.queryStringParameters.code; // Get the last part of the pa
 
   try {
     const client = await pool.connect();
