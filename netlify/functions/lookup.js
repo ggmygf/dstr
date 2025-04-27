@@ -5,7 +5,7 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
-  const code = event.path.split('/').pop(); // Get the last part of the path
+  const code = event.queryStringParameters.code; // Get the last part of the path
 
   if (!/^\d{5}$/.test(code)) {
     return {
