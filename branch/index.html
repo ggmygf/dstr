@@ -12,7 +12,7 @@
             align-items: center;
             gap: 20px;
             padding: 20px;
-            background-color: #f4f4f4;
+            background-color: #bbb;
         }
         .container {
             display: flex;
@@ -83,9 +83,7 @@
 
     <script>
         const paidKeyBox = document.getElementById('paidKeyBox');
-        const fetchPaidBtn = document.getElementById('fetchPaidBtn');
         const trialKeyBox = document.getElementById('trialKeyBox');
-        const fetchTrialBtn = document.getElementById('fetchTrialBtn');
         const messageDiv = document.getElementById('message');
         const errorDiv = document.getElementById('error');
 
@@ -101,10 +99,9 @@
 
                 boxElement.classList.remove('fetching');
                 if (response.ok) {
-                    boxElement.textContent = data.key;
                     boxElement.classList.add('fetched');
-                    navigator.clipboard.writeText(data.key);
-                    messageDiv.textContent = 'Key copied to clipboard!';
+                    setTimeout(() => {boxElement.classList.remove('fetched');}, 2000);
+                    messageDiv.textContent = data.key;
                 } else {
                     boxElement.textContent = 'Tap to Fetch ' + type.charAt(0).toUpperCase() + type.slice(1) + ' Key';
                     boxElement.classList.remove('fetched');
@@ -118,10 +115,7 @@
             }
         }
 
-        fetchPaidBtn.addEventListener('click', () => fetchAndDisplayKey('paid', paidKeyBox));
         paidKeyBox.addEventListener('click', () => fetchAndDisplayKey('paid', paidKeyBox));
-
-        fetchTrialBtn.addEventListener('click', () => fetchAndDisplayKey('trial', trialKeyBox));
         trialKeyBox.addEventListener('click', () => fetchAndDisplayKey('trial', trialKeyBox));
     </script>
 </body>
