@@ -6,6 +6,7 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   const noteType = event.queryStringParameters.type; // 'paid' or 'trial'
+  console.log(noteType);
 
   if (!noteType || (noteType !== 'paid' && noteType !== 'trial')) {
     return {
