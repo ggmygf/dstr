@@ -5,47 +5,43 @@ const pool = new Pool({
 });
 
 exports.handler = async (event) => {
-  const noteType = event.queryStringParameters.type; // 'paid' or 'trial'
-  console.log(noteType);
-
-  if (!noteType || (noteType !== 'paid' && noteType !== 'trial')) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Invalid or missing type parameter. Must be "paid" or "trial".' }),
-    };
-  }
-
   try {
     const client = await pool.connect();
-    const result = await client.query(
-      'SELECT auth_key FROM one_time_keys WHERE note = $1 LIMIT 1',
-      [noteType]
-    );
 
-    if (result.rows.length > 0) {
-      const authKey = result.rows[0].auth_key;
-      // Optionally, you might want to delete the key after fetching, depending on your use case
-      // await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [authKey]);
-      client.release();
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ key: authKey }),
-      };
-    } else {
-      client.release();
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: `No unused "${noteType}" keys found.` }),
-      };
-    }
+    // Fetch one "paid" key
+    const paidResult = await client.query(
+      'SELECT auth_key FROM one_time_keys WHERE note = $1 LIMIT 1',
+      ['paid']
+    );
+    const paidKey = paidResult.rows.length > 0 ? paidResult.rows[0].auth_key : 'No Paid Key Found';
+
+    // Fetch one "trial" key
+    const trialResult = await client.query(
+      'SELECT auth_key FROM one_time_keys WHERE note = $1 LIMIT 1',
+      ['trial']
+    );
+    const trialKey = trialResult.rows.length > 0 ? trialResult.rows[0].auth_key : 'No Trial Key Found';
+
+    // Optionally delete the fetched keys
+    // await client.query('DELETE FROM one_time_keys WHERE note IN ($1, $2)', ['paid', 'trial']);
+
+    client.release();
+
+    // Return the keys in the specified plain text format
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+      body: `Paid: ${paidKey}
+
+Trial: ${trialKey}`,
+    };
   } catch (error) {
     console.error('Database error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error.' }),
+      body: 'Internal server error.',
     };
   }
 };
