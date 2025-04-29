@@ -10,14 +10,14 @@ exports.handler = async (event) => {
 
     // Fetch one "paid" key
     const paidResult = await client.query(
-      'SELECT auth_key FROM one_time_keys WHERE note = $1 LIMIT 1',
+      'SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1',
       ['paid']
     );
     const paidKey = paidResult.rows.length > 0 ? paidResult.rows[0].auth_key : 'No Paid Key Found';
 
     // Fetch one "trial" key
     const trialResult = await client.query(
-      'SELECT auth_key FROM one_time_keys WHERE note = $1 LIMIT 1',
+      'SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1',
       ['trial']
     );
     const trialKey = trialResult.rows.length > 0 ? trialResult.rows[0].auth_key : 'No Trial Key Found';
