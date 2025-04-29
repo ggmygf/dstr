@@ -9,19 +9,17 @@ exports.handler = async (event) => {
     const client = await pool.connect();
 
     // Fetch one "paid" key
-    const paidResult = await client.query(
-      'SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1',
-      ['paid']
-    );
+    const paidResult = await client.query('SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1', ['paid']);
     const paidKey = paidResult.rows.length > 0 ? paidResult.rows[0].auth_key : 'No Paid Key Found';
+    const paidCount = await client.query('SELECT COUNT(*) FROM one_time_keys WHERE note = $1', ['paid']);
+
+
+
 
     // Fetch one "trial" key
-    const trialResult = await client.query(
-      'SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1',
-      ['trial']
-    );
+    const trialResult = await client.query('SELECT auth_key FROM one_time_keys WHERE note = $1 ORDER BY RANDOM() LIMIT 1',['trial']);
     const trialKey = trialResult.rows.length > 0 ? trialResult.rows[0].auth_key : 'No Trial Key Found';
-
+    const trialCount = await client.query('SELECT COUNT(*) FROM one_time_keys WHERE note = $1', ['trial']);
     // Optionally delete the fetched keys
     // await client.query('DELETE FROM one_time_keys WHERE note IN ($1, $2)', ['paid', 'trial']);
 
@@ -60,8 +58,8 @@ exports.handler = async (event) => {
         </head>
         <body>
           <div class="container">
-            <div>Paid: ${paidKey}</div>
-            <div>Trial: ${trialKey}</div>
+            <div>Paid: ${paidKey}   ${paidCount} left</div>
+            <div>Trial: ${trialKey}   ${trialCount} left</div>
           </div>
         </body>
         </html>
