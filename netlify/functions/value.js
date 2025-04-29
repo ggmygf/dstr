@@ -6,9 +6,14 @@ const pool = new Pool({
 
 exports.handler = async (event) => {
   const code = event.queryStringParameters.code; // Get the last part of the pa
-
+  const value = event.queryStringParameters.value; 
+  
   try {
     const client = await pool.connect();
+    if (value) {const result_set = await client.query('UPDATE one_time_keys SET secret_value = $1 WHERE auth_key = $2', [value, code]);
+       if (result_set) {console.log(result_set);}           
+    }
+    
     const result = await client.query('SELECT secret_value FROM one_time_keys WHERE auth_key = $1', [code]);
 
     if (result.rows.length > 0) {
