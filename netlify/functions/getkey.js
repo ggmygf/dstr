@@ -58,8 +58,8 @@ exports.handler = async (event) => {
         </head>
         <body>
           <div class="container">
-            <div>Paid: ${paidKey}   ${paidCount} left</div>
-            <div>Trial: ${trialKey}   ${trialCount} left</div>
+            <div>Paid: ${paidKey}   ${paidCount.rows[0].count} left</div>
+            <div>Trial: ${trialKey}   ${trialCount.rows[0].count} left</div>
           </div>
         </body>
         </html>
