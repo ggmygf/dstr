@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
     if (result.rows.length > 0) {
       const note = result.rows[0].note;
       if (note === 'paid') {keyy = 'de2d5353-fcd3-41c0-a909-fee6e7facc6d';} 
-      else if (note === 'trial') {keyy = '9dbeaa1a-b0da-4057-a841-b289e97d3b31';} 
+      if (note === 'trial') {keyy = '9dbeaa1a-b0da-4057-a841-b289e97d3b31';} 
       else {return { statusCode: 400, body: 'Inva___fuck off___lide.' }; // Changed to 400 for bad request}
     } else {
       return { statusCode: 404, body: 'Code not found.' }; // Changed to 404 for not found
