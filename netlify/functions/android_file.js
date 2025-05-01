@@ -17,10 +17,12 @@ exports.handler = async (event, context) => {
       const note = result.rows[0].note;
       if (note === 'paid') {
         keyy = 'de2d5353-fcd3-41c0-a909-fee6e7facc6d';
+        await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
       } else if (note === 'trial') {
         keyy = '9dbeaa1a-b0da-4057-a841-b289e97d3b31';
+        await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
       } else {
-        return { statusCode: 400, body: 'Invalid note found for the provided code.' }; // Changed to 400 for bad request
+        return { statusCode: 400, body: 'Invalid.' }; // Changed to 400 for bad request
       }
     } else {
       return { statusCode: 404, body: 'Code not found.' }; // Changed to 404 for not found
