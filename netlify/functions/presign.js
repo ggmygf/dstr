@@ -16,7 +16,7 @@ const s3 = new S3Client({
 });
 
 exports.handler = async function (event) {
-  const { id = "1" } = event.queryStringParameters;
+  const id = event.queryStringParameters.id;
   const key = `${id}.apk`; // "1.apk", "2.apk", etc.
   const bucket = "dwtweesdw";
   const expires = 600;
