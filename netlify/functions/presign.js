@@ -4,35 +4,29 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const accessKeyId = "YAZ8AEEOIC98YZO6VXA5";
 const secretAccessKey = "fc2J7nwVwiHZPtz37r90eVeA3QCTMeP827vlYVA4";
 const region = "ap-northeast-2";
-const endpoint = `https://s3.${region}.wasabisys.com`;
+const wasabiEndpoint = `https://s3.${region}.wasabisys.com`;
 
 const s3 = new S3Client({
   region,
-  endpoint,
+  endpoint: wasabiEndpoint,
   credentials: {
     accessKeyId,
     secretAccessKey,
   },
 });
 
-exports.handler = async function (event, context) {
-  const { key, bucket } = event.queryStringParameters;
-
-  if (!key || !bucket) {
-    return {
-      statusCode: 400,
-      body: "Missing 'key' or 'bucket' query parameters.",
-    };
-  }
+exports.handler = async function (event) {
+  const { key = "14065.mp4", bucket = "dwtweesdw", expires = "600" } = event.queryStringParameters;
 
   try {
     const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-
-    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: parseInt(expires) });
 
     return {
-      statusCode: 200,
-      body: JSON.stringify({ url: signedUrl }),
+      statusCode: 302,
+      headers: {
+        Location: signedUrl,
+      },
     };
   } catch (err) {
     return {
