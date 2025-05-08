@@ -16,11 +16,17 @@ const s3 = new S3Client({
 });
 
 exports.handler = async function (event) {
-  const { key = "14065.mp4", bucket = "dwtweesdw", expires = "600" } = event.queryStringParameters;
+  const pathParts = event.path.split('/');
+  const id = pathParts[pathParts.length - 1]; // e.g. '1' from /download/1
+  const objectKey = `${id}.apk`;
 
   try {
-    const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-    const signedUrl = await getSignedUrl(s3, command, { expiresIn: parseInt(expires) });
+    const command = new GetObjectCommand({
+      Bucket: "dwtweesdw",
+      Key: objectKey,
+    });
+
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 600 });
 
     return {
       statusCode: 302,
