@@ -53,7 +53,7 @@ dns:
     - tls://1.0.0.1:853
     - tls://dns.google:853
 proxies:
-  - {name: 1-paid, server: 143.198.228.81, port: 4298, client-fingerprint: chrome, type: vless, uuid: ${keyy}, tls: true, alpn: [h3,h2,http/1.1], tfo: false, skip-cert-verify: false, network: tcp}`;
+  - {"name": "1-paid", "server": "143.198.228.81", "port": 3655, "client-fingerprint": "chrome", "type": "vless", "uuid": "139d5d44-472c-4141-88d0-57cbb82393c8", "tls": true, "alpn": ["h3", "h2", "http/1.1"], "tfo": false, "skip-cert-verify": false, "network": "tcp"}`;
 
   return {
     statusCode: 200,
