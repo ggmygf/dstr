@@ -19,11 +19,25 @@ export async function handler(event, context) {
 
     const data = await response.json();
 
+    // Format the data as "element1\nelement2\n\nelement3\nelement4\n\n..."
+    let formattedResult = '';
+    if (data && Array.isArray(data.data)) {
+      for (let i = 0; i < data.data.length; i++) {
+        formattedResult += `${data.data[i]}\n`;
+        if ((i + 1) % 2 === 0) { // Add an extra newline after every two elements
+          formattedResult += '\n';
+        }
+      }
+    }
+    else{
+        formattedResult = "Error: Data format incorrect.  Expected {data: [\"abc\",\"def\",...]}";
+    }
+
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      body: formattedResult, // Return the formatted string
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain', // Important: Set content type to text/plain
         'Access-Control-Allow-Origin': '*', // Add CORS header if needed for browser access
       },
     };
