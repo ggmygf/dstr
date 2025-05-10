@@ -71,7 +71,6 @@
     window.addEventListener('load', function() {
       const container = document.getElementById('dataDisplayContainer');
       const url = 'https://1dstr.netlify.app/.netlify/functions/appleid';
-
       fetch(url)
         .then(response => {
           if (!response.ok) {
