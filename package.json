@@ -5,6 +5,6 @@
     "pg": "^8.14.1",
     "@aws-sdk/client-s3": "^3.528.0",
     "@aws-sdk/s3-request-presigner": "^3.528.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^2.7.0"
   }
 }
