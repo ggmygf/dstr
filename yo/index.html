@@ -57,49 +57,48 @@
 
 
 
-
- <li>
+   
   <p>苹果：使用以下账号登陆 app store 然后在已购项目里搜索 shadowrocket /寻找图1的app<br><br>绝对能找到的 把你能翻到的地方都翻一遍 <br><br>途中遇到选择提示 留意以下图片是正确选项 <br><br>如软件提示付费可以点继续 实际无需付费 <br><br>顺便把需要的都下载了 ins x youtube等</p>
   <p style="color:red">仔细比对图1 app 有山寨冒充 要确认是一模一样的</p>
-  <p style="color:red">！！！所有账号都不能去系统设置里登陆 会有不可预测后果！！！只能去蓝色的app store登陆使用</p>
+  <p style="color:red">！！！<span style="background-color: black; color: red;">不可以</span>去系统设置里登陆 会有不可预测后果！！！只能去app store使用</p>
   
   <div>
                                           <!-- This is a note that only developers can see -->
-   <div id="dataDisplayContainer" style="background-color: transparent; border: 1px solid #ccc; padding: 10px; max-height: 200px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; word-wrap: break-word;">
-  Loading...
-  <script>
-    window.addEventListener('load', function() {
-      const container = document.getElementById('dataDisplayContainer');
-      const url = 'https://1dstr.netlify.app/.netlify/functions/appleid';
-      fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-          }
-          return response.json();
-        })
-        .then(jsonData => {
-          if (jsonData && jsonData.data && Array.isArray(jsonData.data)) {
-            let content = '';
-            const dataArray = jsonData.data;
-            for (let i = 0; i < dataArray.length; i += 2) {
-              const item1 = dataArray[i];
-              const item2 = (i + 1 < dataArray.length) ? dataArray[i+1] : '';
-              content += item1 + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + item2 + '<br>';
-            }
-            container.innerHTML = content;
-          } else {
-            container.textContent = 'Error: Invalid data format received.';
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching data:', error);
-          container.textContent = 'Error loading data. Please try again later.';
-        });
-    });
-  </script>
-</div>
+    <div id="dataDisplayContainer" style="background-color: transparent; border: 1px solid #ccc; padding: 10px; max-height: 50px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; border-radius: 8px;">
+        载入apple id中...
+
+        <script>
+            // This script fetches data and populates the div
+            window.addEventListener('load', function() {
+                const container = document.getElementById('dataDisplayContainer');
+                // Ensure the URL is correct for your Netlify function endpoint
+                const url = 'https://1dstr.netlify.app/.netlify/functions/appleid';
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            // Handle HTTP errors
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        // Assuming the Netlify function now returns plain text
+                        return response.text(); // Use .text() for plain text response
+                    })
+                    .then(plainTextData => {
+                        // The Netlify function should return the data already formatted
+                        // as plain text like:
+                        // email1\npassword1\n\nemail2\npassword2\n\n...
+                        container.textContent = plainTextData; // Display the plain text directly
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
+                        container.textContent = 'Error loading data. Please try again later. Details: ' + error.message;
+                    });
+            });
+        </script>
+    </div>
                                                           <!-- end of id -->
+</div>
+
   </div>
 
   <div style="display: flex; overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; padding-bottom: 10px; margin-bottom: 10px;">
