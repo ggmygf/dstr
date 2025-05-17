@@ -25,22 +25,22 @@ exports.handler = async (event) => {
     const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
 
     if (result.rows.length > 0) {
-      const secretValue = result.rows[0].secret_value;
-    //  await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
+      const secretValue = result.rows[0].note;
+      await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
       client.release();
       
       const trial = "vless://9dbeaa1a-b0da-4057-a841-b289e97d3b31@143.198.228.81:4298/?type=tcp&security=tls&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1#1-trial";
       const paid = "vless://de2d5353-fcd3-41c0-a909-fee6e7facc6d@143.198.228.81:4298/?type=tcp&security=tls&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1#1-paid";
       let final = "get lost";
-      if (secretValue==='paid'){final = paid;}
-      if (secretValue==='trial'){final = trial;} 
+      if (secretValue==="paid"){final = paid;}
+      if (secretValue==="trial"){final = trial;} 
         
       return {
         statusCode: 200,
         headers: {
           'Content-Type': 'text/plain',
         },
-        body: secretValue,
+        body: final,
       };
     } else {
       client.release();
