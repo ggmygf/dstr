@@ -26,7 +26,7 @@ exports.handler = async (event) => {
 
     if (result.rows.length > 0) {
       const secretValue = result.rows[0].secret_value;
-      await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
+    //  await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
       client.release();
       
       const trial = "vless://9dbeaa1a-b0da-4057-a841-b289e97d3b31@143.198.228.81:4298/?type=tcp&security=tls&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1#1-trial";
@@ -40,7 +40,7 @@ exports.handler = async (event) => {
         headers: {
           'Content-Type': 'text/plain',
         },
-        body: final,
+        body: secretValue,
       };
     } else {
       client.release();
