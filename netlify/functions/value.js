@@ -30,7 +30,7 @@ exports.handler = async (event) => {
       client.release();
       
       const trial = "vless://9dbeaa1a-b0da-4057-a841-b289e97d3b31@143.198.228.81:4298/?type=tcp&security=tls&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1#1-trial";
-      const paid = "vless://de2d5353-fcd3-41c0-a909-fee6e7facc6d@143.198.228.81:4298/?type=tcp&security=tls&fp=chrome&alpn=h3%2Ch2%2Chttp%2F1.1#1-paid";
+      const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
       let final = "get lost";
       if (secretValue==="paid"){final = paid;}
       if (secretValue==="trial"){final = trial;} 
