@@ -14,7 +14,7 @@ mode: Rule
 log-level: info
 external-controller: 127.0.0.1:9090
 proxies:
-  - {name: "aws", server: 54.215.197.189, port: 443, type: vmess, uuid: 56d99d13-fd26-4555-b7d4-5cc0330d9b0a, alterId: 0, cipher: auto, tls: true, skip-cert-verify: false, network: tcp}
+- {name: "new - 美国|Netflix", server: huojian.hjjj168.com, port: 24003, type: trojan, password: 4f640fae-3cf4-46dc-a067-8f6e2852cab3, tls: true, skip-cert-verify: true}
     `
   };
 };
