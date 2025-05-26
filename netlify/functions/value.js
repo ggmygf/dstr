@@ -33,7 +33,7 @@ exports.handler = async (event) => {
       await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
       client.release();
       
-      const trial = "vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
+      const trial = `vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
       const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
       let final = "get lost";
       if (secretValue==="paid"){final = paid;}
