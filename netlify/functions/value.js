@@ -1,21 +1,28 @@
 const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.NEON_DATABASE_URL,
-});
+const pool = new Pool({connectionString: process.env.NEON_DATABASE_URL,});
 
 exports.handler = async (event) => {
   const code = event.queryStringParameters.code;
   const a1 = event.queryStringParameters.a;
   const b1 = event.queryStringParameters.b; 
-  let uuid = "5";
+  let uuid = "5";  let ffkey = "lx";
   const test = "vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJtbmVlOWJ0eCIsCiAgImFkZCI6ICIxNDMuMTk4LjIyOC44MSIsCiAgInBvcnQiOiAzNjU1LAogICJpZCI6ICIxMzlkNWQ0NC00NzJjLTQxNDEtODhkMC01N2NiYjgyMzkzYzgiLAogICJzY3kiOiAiYXV0byIsCiAgIm5ldCI6ICJ0Y3AiLAogICJ0eXBlIjogIm5vbmUiLAogICJ0bHMiOiAidGxzIiwKICAiZnAiOiAiY2hyb21lIiwKICAiYWxwbiI6ICJoMyxoMixodHRwLzEuMSIKfQ=="
   
   if(code==="gg") {return {statusCode: 200, headers: {'Content-Type': 'text/plain',}, body: test,};}
+
+
+
+
+
+
+
+
+
+
+
   
-  try {
-    const client = await pool.connect();
-    
+  try {  const client = await pool.connect();
+
     if (a1 && b1) {const result_set = await client.query('UPDATE one_time_keys SET auth_key = $1, note = $2 WHERE secret_value = $3', [a1, b1, "o3dp55vks9gXcy1d"]);
        if (result_set) {console.log(result_set); 
        const targetUrl = `https://uuid3update.jinghunnai.workers.dev/?uuid=${b1}`;
@@ -23,43 +30,26 @@ exports.handler = async (event) => {
        return;
     }}
 
-    const direct = await client.query('SELECT note FROM one_time_keys WHERE secret_value = $1', ["o3dp55vks9gXcy1d"]);
-    if (direct.rows.length > 0) { uuid = direct.rows[0].note;};
+    const direct = await client.query('SELECT auth_key, note FROM one_time_keys WHERE secret_value = $1', ["o3dp55vks9gXcy1d"]);
+    if (direct.rows.length > 0) { uuid = direct.rows[0].note;  ffkey = direct.rows[0].auth_key;  };
 
-    
-    const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
-    if (result.rows.length > 0) {
-      const secretValue = result.rows[0].note;
-      await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]);
-      client.release();
-      
-      const trial = `vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
-      const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
-      let final = "get lost";
-      if (secretValue==="paid"){final = paid;}
-      if (secretValue==="trial"){final = trial;} 
-        
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-        body: final,
-      };
-    } else {
-      client.release();
-      return {
-        statusCode: 404,
-        body: 'Code not found or already used.',
-      };
-    }
-  } catch (error) {
-    console.error('Database error:', error);
-    return {
-      statusCode: 500,
-      body: 'Internal server error.',
-    };
-  }
+    let final = "get lost";  
+    const trial = `vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
+    const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
+
+      if   
+           (code===ffkey) 
+           { final = trial; } 
+      else   
+           { const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
+             if (result.rows.length > 0) {      // if (result.rows[0].note==="paid") {  
+                final = paid; await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]); }
+           }
+      return 
+           { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
+           
+  } catch (error) { console.error('Database error:', error); return { statusCode: 500, body: 'Internal server error.', };
+  } finally { client.release(); }
 };
 
 
