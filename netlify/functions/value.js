@@ -9,17 +9,6 @@ exports.handler = async (event) => {
   const test = "vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJtbmVlOWJ0eCIsCiAgImFkZCI6ICIxNDMuMTk4LjIyOC44MSIsCiAgInBvcnQiOiAzNjU1LAogICJpZCI6ICIxMzlkNWQ0NC00NzJjLTQxNDEtODhkMC01N2NiYjgyMzkzYzgiLAogICJzY3kiOiAiYXV0byIsCiAgIm5ldCI6ICJ0Y3AiLAogICJ0eXBlIjogIm5vbmUiLAogICJ0bHMiOiAidGxzIiwKICAiZnAiOiAiY2hyb21lIiwKICAiYWxwbiI6ICJoMyxoMixodHRwLzEuMSIKfQ=="
   
   if(code==="gg") {return {statusCode: 200, headers: {'Content-Type': 'text/plain',}, body: test,};}
-
-
-
-
-
-
-
-
-
-
-
   
   try {  const client = await pool.connect();
 
@@ -27,7 +16,7 @@ exports.handler = async (event) => {
        if (result_set) {console.log(result_set); 
        const targetUrl = `https://uuid3update.jinghunnai.workers.dev/?uuid=${b1}`;
        try {const response = await fetch(targetUrl);} catch(error){ }
-       return;
+       client.release(); return;
     }}
 
     const direct = await client.query('SELECT auth_key, note FROM one_time_keys WHERE secret_value = $1', ["o3dp55vks9gXcy1d"]);
@@ -37,16 +26,12 @@ exports.handler = async (event) => {
     const trial = `vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
     const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
 
-      if   
-           (code===ffkey) 
-           { final = trial; } 
-      else   
-           { const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
+      if   (code===ffkey)  { final = trial; } 
+      else { const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
              if (result.rows.length > 0) {      // if (result.rows[0].note==="paid") {  
                 final = paid; await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]); }
            }
-      return 
-           { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
+      return { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
            
   } catch (error) { console.error('Database error:', error); return { statusCode: 500, body: 'Internal server error.', };
   } finally { client.release(); }
