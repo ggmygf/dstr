@@ -31,10 +31,12 @@ exports.handler = async (event) => {
              if (result.rows.length > 0) {      // if (result.rows[0].note==="paid") {  
                 final = paid; await client.query('DELETE FROM one_time_keys WHERE auth_key = $1', [code]); }
            }
-      return { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
-           
+       
+       if (client){client.release();}
+       return { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
+ 
   } catch (error) { console.error('Database error:', error); return { statusCode: 500, body: 'Internal server error.', };
-  } finally { if (client){client.release();}  }
+  } 
 };
 
 
