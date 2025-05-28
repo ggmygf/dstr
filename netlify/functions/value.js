@@ -34,7 +34,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: { 'Content-Type': 'text/plain', }, body: final, };
            
   } catch (error) { console.error('Database error:', error); return { statusCode: 500, body: 'Internal server error.', };
-  } finally { client.release(); }
+  } finally { if (client){client.release();}  }
 };
 
 
