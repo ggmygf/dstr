@@ -6,8 +6,8 @@ exports.handler = async (event) => {
   const a1 = event.queryStringParameters.a;
   const b1 = event.queryStringParameters.b; 
   let uuid = "5";  let ffkey = "lx";
-  const test = "vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJtbmVlOWJ0eCIsCiAgImFkZCI6ICIxNDMuMTk4LjIyOC44MSIsCiAgInBvcnQiOiAzNjU1LAogICJpZCI6ICIxMzlkNWQ0NC00NzJjLTQxNDEtODhkMC01N2NiYjgyMzkzYzgiLAogICJzY3kiOiAiYXV0byIsCiAgIm5ldCI6ICJ0Y3AiLAogICJ0eXBlIjogIm5vbmUiLAogICJ0bHMiOiAidGxzIiwKICAiZnAiOiAiY2hyb21lIiwKICAiYWxwbiI6ICJoMyxoMixodHRwLzEuMSIKfQ=="
-  
+  const test = "vless://auto:2818dbc4-2f9c-4616-bd29-bf2f9f6d929a@103.21.244.11:443?remarks=duckys&obfsParam=guest.duckygo.shop&path=/?ed=2048&obfs=websocket&tls=1&peer=guest.duckygo.shop&alpn=h2,http/1.1"
+  // vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJtbmVlOWJ0eCIsCiAgImFkZCI6ICIxNDMuMTk4LjIyOC44MSIsCiAgInBvcnQiOiAzNjU1LAogICJpZCI6ICIxMzlkNWQ0NC00NzJjLTQxNDEtODhkMC01N2NiYjgyMzkzYzgiLAogICJzY3kiOiAiYXV0byIsCiAgIm5ldCI6ICJ0Y3AiLAogICJ0eXBlIjogIm5vbmUiLAogICJ0bHMiOiAidGxzIiwKICAiZnAiOiAiY2hyb21lIiwKICAiYWxwbiI6ICJoMyxoMixodHRwLzEuMSIKfQ==
   if(code==="gg") {return {statusCode: 200, headers: {'Content-Type': 'text/plain',}, body: test,};}
   
   try {  const client = await pool.connect();
@@ -23,9 +23,9 @@ exports.handler = async (event) => {
     if (direct.rows.length > 0) { uuid = direct.rows[0].note;  ffkey = direct.rows[0].auth_key;  };
 
     let final = "get lost";  
-    const trial = `vless://${uuid}@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
-    const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=sorry-auth&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
-
+    const trial = `vless://${uuid}@103.21.244.11:443?remarks=waitwait&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1`;
+    const paid = "vless://6af3b37a-91a9-4773-8d76-1e81918448c3@103.21.244.11:443?remarks=offi-sorry&obfsParam=love.gracemygf.pics&path=/?ed=2048&obfs=websocket&tls=1&peer=love.gracemygf.pics&alpn=h2,http/1.1";
+     // vless://auto:2818dbc4-2f9c-4616-bd29-bf2f9f6d929a@103.21.244.11:443?remarks=duckys&obfsParam=guest.duckygo.shop&path=/?ed=2048&obfs=websocket&tls=1&peer=guest.duckygo.shop&alpn=h2,http/1.1
       if   (code===ffkey)  { final = trial; } 
       else { const result = await client.query('SELECT note FROM one_time_keys WHERE auth_key = $1', [code]);
              if (result.rows.length > 0) {      // if (result.rows[0].note==="paid") {  
