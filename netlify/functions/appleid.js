@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 export async function handler(event, context) {
-  const targetUrl = 'http://13.57.39.66:3200/run';
+  const targetUrl = 'http://13.57.39.66:3100/run';
 
   try {
     const response = await fetch(targetUrl);
