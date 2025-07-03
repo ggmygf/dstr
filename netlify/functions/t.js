@@ -14,7 +14,7 @@ mode: Rule
 log-level: info
 external-controller: 127.0.0.1:9090
 proxies:
-- {name: "new - 美国|Netflix", server: huojian.hjjj168.com, port: 24003, type: trojan, password: 4f640fae-3cf4-46dc-a067-8f6e2852cab3, tls: true, skip-cert-verify: true}
+- {name: "sorry-aulix", server: 103.21.244.11, port: 443, type: vless, uuid: 6af3b37a-91a9-4773-8d76-1e81918448c3, tls: true, skip-cert-verify: true, ws-opts: {path: "/?ed=2048", headers: {Host: love.gracemygf.pics}}, alpn: [h2, http/1.1], sni: love.gracemygf.pics}
     `
   };
 };
