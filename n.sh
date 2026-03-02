@@ -8,7 +8,7 @@ set -e
 # ---------- 默认配置 ----------
 HYSTERIA_VERSION="v2.6.5"
 DEFAULT_PORT=3035         # 自适应端口
-AUTH_PASSWORD="cojweor902clhw923cs"   # 建议修改为复杂密码
+AUTH_PASSWORD="shiba_coclfdr9923cs"   # 建议修改为复杂密码
 CERT_FILE="cert.pem"
 KEY_FILE="key.pem"
 SNI="www.bing.com"
@@ -119,7 +119,7 @@ print_connection_info() {
     echo "   🔑 密码: $AUTH_PASSWORD"
     echo ""
     echo "📱 节点链接（SNI=${SNI}, ALPN=${ALPN}, 跳过证书验证）:"
-    echo "hysteria2://${AUTH_PASSWORD}@${IP}:${SERVER_PORT}?sni=${SNI}&alpn=${ALPN}&insecure=1#Hy2-Bing"
+    echo "hysteria2://${AUTH_PASSWORD}@${IP}:${SERVER_PORT}?sni=${SNI}&alpn=${ALPN}&insecure=1#Hing"
     echo ""
     echo "📄 客户端配置文件:"
     echo "server: ${IP}:${SERVER_PORT}"
