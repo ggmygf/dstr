@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minimalist BTC Chart</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0d1117;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #chart-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            background-color: #0d1117;
+        }
+        /* Controls wrapper for right-centering */
+        .controls {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10;
+        }
+
+/* New Top Left Controls */
+        .drawing-controls {
+            position: absolute;
+            left: 16px;
+            top: 50px; /* Positioned below your chart label */
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .btn-rect {
+            padding: 0 12px;
+            height: 36px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+            background: rgba(22, 27, 34, 0.8);
+            color: #c9d1d9;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            touch-action: manipulation;
+        }
+        .btn-rect:active, .btn-rect.active {
+            background: #21262d;
+            color: #58a6ff;
+            border-color: #58a6ff;
+        }
+
+        .btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid #30363d;
+            background: rgba(22, 27, 34, 0.8);
+            color: #c9d1d9;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            touch-action: manipulation;
+        }
+        .btn:active {
+            background: #21262d;
+            color: #58a6ff;
+        }
+        .label {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            color: #8b949e;
+            font-size: 14px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="chart-container">
+        <div class="label" id="pair-label">BTCUSDT 15M (Bybit)</div>
+        <div class="drawing-controls">
+            <button class="btn-rect" id="btn-draw">DRAW</button>
+            <button class="btn-rect" id="btn-confirm">CONFIRM</button>
+            <button class="btn-rect" id="btn-edit">EDIT</button>
+            <button class="btn-rect" id="btn-switch">SWITCH</button>
+            <button class="btn-rect" id="btn-left">←</button>
+            <button class="btn-rect" id="btn-right">→</button>
+            <button class="btn-rect" id="btn-delete" style="display:none;">DELETE</button>
+        </div>
+        <canvas id="chart"></canvas>
+        
+        <div class="controls">
+            <button class="btn" id="w-plus" title="Stretch Width">↔+</button>
+            <button class="btn" id="w-minus" title="Shrink Width">↔-</button>
+            <button class="btn" id="h-plus" title="Stretch Height">↕+</button>
+            <button class="btn" id="h-minus" title="Shrink Height">↕-</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        
+       let candles = [];
+        let scaleX = 8;  // Candle width
+        let scaleY = 10; // Price stretch factor
+        const spacing = 2; 
+        let hasInitializedZoom = false;
+        let isPointLocked = false;
+
+        // Dragging and panning state
+        let offsetX = 0;
+        let isDragging = false;
+        let startDragX = 0;
+
+        // Handle resizing
+        function resize() {
+            canvas.width = window.innerWidth * window.devicePixelRatio;
+            canvas.height = window.innerHeight * window.devicePixelRatio;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            draw();
+        }
+
+        // Fetch production data directly from Bybit V5 API
+        async function fetchData() {
+    try {
+        const response = await fetch('https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=15&limit=100');
+        const data = await response.json();
+
+        if (data.result && data.result.list) {
+
+            candles = data.result.list.map(d => ({
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4])
+            })).reverse();
+
+            draw();
+
+            // RUN ONLY ONCE
+            if (!hasInitializedZoom) {
+                hasInitializedZoom = true;
+
+                const hMinusBtn = document.getElementById('h-minus');
+                const hMinusBt = document.getElementById('w-minus');
+
+                for (let i = 0; i < 5; i++) {
+                    hMinusBtn.click();
+                    hMinusBt.click();
+                }
+            }
+        }
+
+    } catch (e) {
+        console.error("Failed fetching data", e);
+    }
+}
+
+        function draw() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            
+            if (candles.length === 0) return;
+
+            // Find visible bounds to dynamically center/fit price
+            let minP = Infinity, maxP = -Infinity;
+            candles.forEach(c => {
+                if (c.low < minP) minP = c.low;
+                if (c.high > maxP) maxP = c.high;
+            });
+
+            const priceRange = maxP - minP;
+            const centerY = h / 2;
+            const centerPrice = minP + (priceRange / 2);
+
+
+            // Right-align chart data to make room for current price action
+            const startX = w - 80 + offsetX; 
+
+            candles.forEach((c, i) => {
+                const idxFromEnd = candles.length - 1 - i;
+                const x = startX - (idxFromEnd * (scaleX + spacing));
+                
+                // Skip rendering if offscreen left
+                if (x < -scaleX) return;
+
+                // Price mapping function using height scale multiplier
+                const getY = (p) => centerY + (centerPrice - p) * (scaleY * (h / priceRange / 15));
+
+                const yOpen = getY(c.open);
+                const yClose = getY(c.close);
+                const yHigh = getY(c.high);
+                const yLow = getY(c.low);
+
+                const isBull = c.close >= c.open;
+                const color = isBull ? '#238636' : '#da3633';
+                
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 1.5;
+
+                // Wick
+                ctx.beginPath();
+                ctx.moveTo(x + scaleX / 2, yHigh);
+                ctx.lineTo(x + scaleX / 2, yLow);
+                ctx.stroke();
+
+                // Body
+                const bodyH = Math.abs(yClose - yOpen);
+                ctx.fillRect(x, Math.min(yOpen, yClose), scaleX, Math.max(bodyH, 1));
+            });
+        }
+
+        // Configuration modifiers via controls
+        document.getElementById('w-plus').addEventListener('click', () => { scaleX = Math.min(scaleX + 2, 30); draw(); });
+        document.getElementById('w-minus').addEventListener('click', () => { scaleX = Math.max(scaleX - 2, 2); draw(); });
+        document.getElementById('h-plus').addEventListener('click', () => { scaleY *= 1.2; draw(); });
+        document.getElementById('h-minus').addEventListener('click', () => { scaleY /= 1.2; draw(); });
+
+        window.addEventListener('resize', resize);
+        
+        // Init
+        resize();
+        fetchData();
+        // Poll for fresh data every 10 seconds
+        setInterval(fetchData, 10000);
+
+        let selectedLineIndex = -1; // -1 means no trendline is selected
+
+        function updateDeleteButton() {
+    const deleteBtn = document.getElementById('btn-delete');
+
+    if (selectedLineIndex !== -1) {
+        deleteBtn.style.display = 'flex';
+    } else {
+        deleteBtn.style.display = 'none';
+    }
+}
+
+        // --- Dragging Functionality ---
+        function onPointerDown(e) {
+    const clientX = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
+    const clientY = e.clientY !== undefined ? e.clientY : e.touches[0].clientY;
+
+    // Only try selecting if we are NOT actively drawing or editing
+    if (!isDrawingMode && !isEditMode) {
+        let clickedLineIdx = -1;
+        const clickRadius = 10; // Tolerance in pixels
+
+        // Shared scaling helpers to get current XY coordinates of the lines
+        let minP = Infinity, maxP = -Infinity;
+        candles.forEach(c => {
+            if (c.low < minP) minP = c.low;
+            if (c.high > maxP) maxP = c.high;
+        });
+        const priceRange = maxP - minP;
+        const centerY = window.innerHeight / 2;
+        const centerPrice = minP + (priceRange / 2);
+        const startX = window.innerWidth - 80 + offsetX;
+        
+        const getY = (p) => centerY + (centerPrice - p) * (scaleY * (window.innerHeight / priceRange / 15));
+        const getX = (idx) => startX - (idx * (scaleX + spacing));
+
+        // Check distance to each trendline
+        trendlines.forEach((line, index) => {
+            const x1 = getX(line.p1.idxFromEnd) + scaleX / 2;
+            const y1 = getY(line.p1.price);
+            const x2 = getX(line.p2.idxFromEnd) + scaleX / 2;
+            const y2 = getY(line.p2.price);
+
+            // Distance from point (clientX, clientY) to line segment (x1, y1) -> (x2, y2)
+            const A = clientX - x1;
+            const B = clientY - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+
+            let extX, extY;
+            if (param < 0) {
+                extX = x1;
+                extY = y1;
+            } else {
+                // Since your lines behave like infinite rays, we don't clamp parameter at 1
+                extX = x1 + param * C;
+                extY = y1 + param * D;
+            }
+
+            const dist = Math.hypot(clientX - extX, clientY - extY);
+            if (dist < clickRadius) {
+                clickedLineIdx = index;
+            }
+        });
+
+        if (clickedLineIdx !== -1) {
+            selectedLineIndex = clickedLineIdx;
+            isDragging = false; // Prevent chart panning when selecting a line
+            updateDeleteButton();
+            draw();
+            return; // Stop execution here
+        } else {
+            selectedLineIndex = -1; // Clicked empty space, deselect
+            updateDeleteButton();
+            draw();
+        }
+    }
+
+    if (selectedLineIndex === -1) {
+    isDragging = true;
+    startDragX = clientX - offsetX;
+}
+}
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            const clientX = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
+            offsetX = clientX - startDragX;
+            draw();
+        }
+
+        function onPointerUp() {
+            isDragging = false;
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        // Touch events for mobile support
+        canvas.addEventListener('touchstart', onPointerDown);
+        window.addEventListener('touchmove', onPointerMove);
+        window.addEventListener('touchend', onPointerUp);
+
+        // --- Trendline Drawing Logic ---
+        let trendlines = []; // Array of completed lines: {x1, y1, x2, y2}
+        let activePoints = []; // Stores points for the line currently being drawn
+        
+        let isDrawingMode = false;
+        let isEditMode = false;
+        let currentDotIndex = -1; // Offset from latest candle
+        let targetType = 'high';   // 'high' or 'low'
+
+        // Helper to update active UI styling on core workflow buttons
+        function updateActiveButtons() {
+            document.getElementById('btn-draw').classList.toggle('active', isDrawingMode);
+            document.getElementById('btn-edit').classList.toggle('active', isEditMode);
+        }
+
+        // Action: DRAW
+        document.getElementById('btn-draw').addEventListener('click', () => {
+            isDrawingMode = true;
+            isEditMode = false;
+            selectedLineIndex = -1;
+            activePoints = []; // Reset working buffer
+            currentDotIndex = 10; // Start at 10th candle back
+            targetType = 'high'; // Reset to default high rules
+            updateActiveButtons();
+            draw();
+        });
+
+        // Action: DELETE
+         document.getElementById('btn-delete').addEventListener('click', () => {
+    if (selectedLineIndex === -1) return;
+    trendlines.splice(selectedLineIndex, 1);
+    selectedLineIndex = -1;
+    updateDeleteButton();
+    draw();
+});
+
+        // Action: CONFIRM
+        document.getElementById('btn-confirm').addEventListener('click', () => {
+            if (!isDrawingMode && !isEditMode) return;
+            if (currentDotIndex === -1 || candles.length <= currentDotIndex) return;
+
+            const targetCandle = candles[candles.length - 1 - currentDotIndex];
+            const priceVal = targetType === 'high' ? targetCandle.high : targetCandle.low;
+
+            if (isEditMode) {
+                // Reconstruct from modified dual active values
+                trendlines.splice(selectedLineIndex, 0, {p1: activePoints[0],p2: activePoints[1]});
+                selectedLineIndex = -1;
+                activePoints = [];
+                isEditMode = false;
+                currentDotIndex = -1;
+                document.getElementById('btn-edit').innerText = "EDIT";
+                updateActiveButtons();
+                draw();
+            } else if (isDrawingMode) {
+                if (activePoints.length === 0) {
+                    activePoints.push({ idxFromEnd: currentDotIndex, price: priceVal });
+                    currentDotIndex = 10; 
+                    isPointLocked = false;
+                    draw();
+                }
+            }
+        });
+
+        // Action: EDIT
+        // Tracking which point is currently being edited (1 or 2)
+        let editStep = 1; 
+
+        document.getElementById('btn-edit').addEventListener('click', () => {
+
+    // ONLY allow edit if something is selected
+    if (selectedLineIndex === -1 && !isEditMode) {
+        return;
+    }
+
+    const editBtn = document.getElementById('btn-edit');
+
+    // ENTER EDIT MODE
+    if (!isEditMode) {
+
+        isEditMode = true;
+        isDrawingMode = false;
+        editStep = 1;
+
+        // Take ONLY the selected line
+        const lineToEdit = trendlines[selectedLineIndex];
+
+        // Remove it temporarily from render list
+        trendlines.splice(selectedLineIndex, 1);
+
+        // Store both points
+        activePoints = [
+            { ...lineToEdit.p1 },
+            { ...lineToEdit.p2 }
+        ];
+
+    } else {
+
+        // Toggle between point 1 and point 2
+        editStep = editStep === 1 ? 2 : 1;
+    }
+
+    // POINT 1
+    if (editStep === 1) {
+
+        editBtn.innerText = "EDIT 1";
+
+        currentDotIndex = activePoints[0].idxFromEnd;
+
+        const targetCandle =
+            candles[candles.length - 1 - currentDotIndex];
+
+        targetType =
+            (activePoints[0].price === targetCandle.high)
+                ? 'high'
+                : 'low';
+
+    } else {
+
+        // POINT 2
+        editBtn.innerText = "EDIT 2";
+
+        currentDotIndex = activePoints[1].idxFromEnd;
+
+        const targetCandle =
+            candles[candles.length - 1 - currentDotIndex];
+
+        targetType =
+            (activePoints[1].price === targetCandle.high)
+                ? 'high'
+                : 'low';
+    }
+
+    updateActiveButtons();
+    draw();
+});
+
+        // Action: SWITCH
+        document.getElementById('btn-switch').addEventListener('click', () => {
+            if (isDrawingMode || isEditMode) {
+                targetType = targetType === 'high' ? 'low' : 'high';
+                draw();
+            }
+        });
+
+        // Action: Move Left (←)
+        document.getElementById('btn-left').addEventListener('click', () => {
+            if ((isDrawingMode || isEditMode) && currentDotIndex < candles.length - 1) {
+                currentDotIndex++;
+                draw();
+            }
+        });
+
+        // Action: Move Right (→)
+        document.getElementById('btn-right').addEventListener('click', () => {
+            if ((isDrawingMode || isEditMode) && currentDotIndex > 0) {
+                currentDotIndex--;
+                draw();
+            }
+        });
+
+        // Core Render Sequence Interpolation
+        const originalDraw = draw;
+        draw = function() {
+            originalDraw(); // Draw asset candlesticks first
+            
+            if (candles.length === 0) return;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            let minP = Infinity, maxP = -Infinity;
+            candles.forEach(c => {
+                if (c.low < minP) minP = c.low;
+                if (c.high > maxP) maxP = c.high;
+            });
+            const priceRange = maxP - minP;
+            const centerY = h / 2;
+            const centerPrice = minP + (priceRange / 2);
+            const startX = w - 80 + offsetX; 
+            
+            // Shared geometry scaling calculations
+            const getY = (p) => centerY + (centerPrice - p) * (scaleY * (h / priceRange / 15));
+            const getX = (idxFromEnd) => startX - (idxFromEnd * (scaleX + spacing));
+
+            // Function to draw an infinite ray pointing right
+            function drawRay(x1, y1, x2, y2) {
+    ctx.strokeStyle = '#8b949e'; 
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+
+    // 1. Calculate the distance/direction between the two points
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+
+    if (len < 0.01) return; // Prevent errors if points are exactly stacked
+
+    // 2. Normalize the direction (turn it into a scale of 1)
+    const dirX = dx / len;
+    const dirY = dy / len;
+
+    // 3. Project the line incredibly far out in that direction (e.g., 10,000 pixels)
+    const farX = x1 + dirX * 10000;
+    const farY = y1 + dirY * 10000;
+
+    ctx.lineTo(farX, farY);
+    ctx.stroke();
+}
+
+            // 1. Draw all completed permanent trendlines
+            // 1. Draw all completed permanent trendlines
+            trendlines.forEach((line, index) => {
+                const x1 = getX(line.p1.idxFromEnd) + scaleX / 2;
+                const y1 = getY(line.p1.price);
+                const x2 = getX(line.p2.idxFromEnd) + scaleX / 2;
+                const y2 = getY(line.p2.price);
+                
+                // If this specific line is selected, change its color
+                if (index === selectedLineIndex) {
+                    ctx.strokeStyle = '#58a6ff'; // Bright Blue Highlight for line
+                    ctx.lineWidth = 2.5;
+                } else {
+                    ctx.strokeStyle = '#8b949e'; // Normal grey
+                    ctx.lineWidth = 1.5;
+                }
+
+                // Custom Ray implementation inside loop to respect highlighted stroke styles
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const len = Math.hypot(dx, dy);
+                if (len > 0.01) {
+                    const farX = x1 + (dx / len) * 10000;
+                    const farY = y1 + (dy / len) * 10000;
+                    ctx.lineTo(farX, farY);
+                    ctx.stroke();
+                }
+
+                // Draw the two end points in blue if selected
+                if (index === selectedLineIndex) {
+                    ctx.fillStyle = '#1f6feb'; // Solid blue dot
+                    
+                    // Point 1 dot
+                    ctx.beginPath();
+                    ctx.arc(x1, y1, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Point 2 dot
+                    ctx.beginPath();
+                    ctx.arc(x2, y2, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 2. Draw live preview line during point 2 selection phase (HIDDEN UNTIL CONFIRMED)
+            if (isEditMode && activePoints.length === 1 && currentDotIndex !== -1) {
+                // Completely empty or commented out so ray is not shown while selecting/moving points
+            }
+
+            // 3 & 4 Combined Dynamic Renderer for Anchors and Selectors
+            if (isEditMode && activePoints.length === 2) {
+                const activeIdx = (editStep === 1) ? 0 : 1;
+                const staticIdx = (editStep === 1) ? 1 : 0;
+
+                // Draw the anchored confirmed point (Blue)
+                const sCx = getX(activePoints[staticIdx].idxFromEnd) + scaleX / 2;
+                const sCy = getY(activePoints[staticIdx].price);
+                ctx.fillStyle = '#1f6feb';
+                ctx.beginPath();
+                ctx.arc(sCx, sCy, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw the active moving target point (White)
+                const targetCandle = candles[candles.length - 1 - currentDotIndex];
+                if (targetCandle) {
+                    const movePrice = targetType === 'high' ? targetCandle.high : targetCandle.low;
+                    const mCx = getX(currentDotIndex) + scaleX / 2;
+                    const mCy = getY(movePrice);
+                    
+                    // Update array tracking positions live as button changes it
+                    activePoints[activeIdx] = { idxFromEnd: currentDotIndex, price: movePrice };
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#0d1117';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(mCx, mCy, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            } else {
+                // Fallback for standard DRAW mode styling rules
+                activePoints.forEach(pt => {
+                    const cx = getX(pt.idxFromEnd) + scaleX / 2;
+                    const cy = getY(pt.price);
+                    ctx.fillStyle = '#1f6feb';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                if (isDrawingMode && currentDotIndex !== -1) {
+                    const targetCandle = candles[candles.length - 1 - currentDotIndex];
+                    if (targetCandle) {
+                        const cx = getX(currentDotIndex) + scaleX / 2;
+                        const cy = getY(targetType === 'high' ? targetCandle.high : targetCandle.low);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.strokeStyle = '#0d1117';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                }
+            }
+        };
+
+        function getPointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX ?? e.touches?.[0]?.clientX ?? 0) - rect.left;
+    const y = (e.clientY ?? e.touches?.[0]?.clientY ?? 0) - rect.top;
+    return { x, y };
+}
+
+// convert screen Y → price (same logic as your draw())
+function screenYToPrice(y) {
+    const h = window.innerHeight;
+
+    let minP = Infinity, maxP = -Infinity;
+    candles.forEach(c => {
+        if (c.low < minP) minP = c.low;
+        if (c.high > maxP) maxP = c.high;
+    });
+
+    const priceRange = maxP - minP;
+    const centerY = h / 2;
+    const centerPrice = minP + (priceRange / 2);
+
+    const price = centerPrice - (y - centerY) / (scaleY * (h / priceRange / 15));
+    return price;
+}
+
+// snap price → high/low logic (TradingView style feel)
+function snapToCandlePrice(price, idxFromEnd) {
+    const c = candles[candles.length - 1 - idxFromEnd];
+    if (!c) return price;
+
+    const distHigh = Math.abs(price - c.high);
+    const distLow = Math.abs(price - c.low);
+
+    return distHigh < distLow ? c.high : c.low;
+}
+
+// MAIN TAP HANDLER
+function handleTap(e) {
+
+    if (!isDrawingMode && !isEditMode) return;
+
+    const targetCandle =
+        candles[candles.length - 1 - currentDotIndex];
+
+    if (!targetCandle) return;
+
+    const movePrice =
+        targetType === 'high'
+            ? targetCandle.high
+            : targetCandle.low;
+
+    // EDIT MODE
+    if (isEditMode && activePoints.length === 2) {
+
+        const idx = (editStep === 1) ? 0 : 1;
+
+        activePoints[idx] = {
+            idxFromEnd: currentDotIndex,
+            price: movePrice
+        };
+
+        if (editStep === 1) {
+
+            editStep = 2;
+
+            currentDotIndex = activePoints[1].idxFromEnd;
+
+            const c =
+                candles[candles.length - 1 - currentDotIndex];
+
+            targetType =
+                activePoints[1].price === c.high
+                    ? 'high'
+                    : 'low';
+
+        } else {
+
+            trendlines.splice(selectedLineIndex, 0, {
+                p1: activePoints[0],
+                p2: activePoints[1]
+            });
+
+            isEditMode = false;
+            selectedLineIndex = -1;
+            activePoints = [];
+            currentDotIndex = -1;
+
+            document.getElementById('btn-edit').innerText = "EDIT";
+
+            updateDeleteButton();
+            updateActiveButtons();
+        }
+
+    }
+
+    // DRAW MODE
+    else if (isDrawingMode) {
+        if (activePoints.length === 0) {
+            activePoints.push({
+                idxFromEnd: currentDotIndex,
+                price: movePrice
+            });
+        } else {
+            activePoints.push({
+                idxFromEnd: currentDotIndex,
+                price: movePrice
+            });
+            trendlines.push({
+                p1: activePoints[0],
+                p2: activePoints[1]
+            });
+
+            activePoints = [];
+            isDrawingMode = false;
+            currentDotIndex = -1;
+            updateActiveButtons();
+        }
+    }
+    draw();
+}
+
+function getY(p) {
+
+    const h = window.innerHeight;
+    let minP = Infinity, maxP = -Infinity;
+    candles.forEach(c => {
+        if (c.low < minP) minP = c.low;
+        if (c.high > maxP) maxP = c.high;
+    });
+
+    const priceRange = maxP - minP;
+    const centerY = h / 2;
+    const centerPrice = minP + (priceRange / 2);
+
+    return centerY + (centerPrice - p) *
+        (scaleY * (h / priceRange / 15));
+}
+
+function handlePointerHover(e) {
+
+    if ((!isDrawingMode && !isEditMode)) return;
+    const rect = canvas.getBoundingClientRect();
+    const x =
+        (e.clientX ?? e.touches?.[0]?.clientX ?? 0) - rect.left;
+
+    let minDist = Infinity;
+    let bestIdx = currentDotIndex;
+
+    for (let i = 0; i < candles.length; i++) {
+
+        const w = window.innerWidth;
+        const startX = w - 80 + offsetX;
+
+        const candleX =
+            startX - (i * (scaleX + spacing)) + scaleX / 2;
+
+        const dist = Math.abs(x - candleX);
+
+        if (dist < minDist) {
+            minDist = dist;
+            bestIdx = i;
+        }
+    }
+
+    currentDotIndex = bestIdx;
+
+    const pointerY =
+    (e.clientY ?? e.touches?.[0]?.clientY ?? 0) - rect.top;
+
+const targetCandle =
+    candles[candles.length - 1 - currentDotIndex];
+
+if (targetCandle) {
+
+    const distHigh = Math.abs(pointerY - getY(targetCandle.high));
+    const distLow = Math.abs(pointerY - getY(targetCandle.low));
+
+    targetType = distHigh < distLow ? 'high' : 'low';
+}
+
+draw();
+}
+
+// attach to canvas
+canvas.addEventListener('mousedown', handleTap);
+canvas.addEventListener('touchstart', handleTap, { passive: true });
+canvas.addEventListener('mousemove', handlePointerHover);
+canvas.addEventListener('touchmove', handlePointerHover, { passive: true });
+
+    </script>
+</body>
+</html>
