@@ -1,0 +1,912 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minimalist BTC Chart Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0; 
+            user-select: none; -webkit-user-select: none;
+        }
+        input {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+        body, html {
+            width: 100%;
+            height: 100%; background-color: #0d1117; 
+            overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column; color: #c9d1d9;
+        }
+        
+        /* Layout Bars */
+        #top-bar {
+              height: 60px; width: 100%; display: flex;  align-items: center; 
+              justify-content: space-between;  padding: 0 16px; background: #0d1117;  z-index: 50; 
+              flex-shrink: 0; gap: 8px; border-bottom: 1px solid #21262d;
+          }
+
+        #main-area {
+            flex: 1;
+            position: relative; width: 100%; overflow: hidden; display: flex;
+        }
+        
+        /* Window UI */
+        #floating-title-container {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+        }
+        #title-touch-zone {
+            padding: 15px 30px;
+            cursor: ns-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #window-title {
+            color: #c9d1d9;
+            font-size: 14px; font-weight: 600; background: rgba(22, 27, 34, 0.85);
+            padding: 6px 14px; border-radius: 20px; outline: none;
+            border: 1px solid #30363d;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            white-space: nowrap;
+        }
+        
+        .window-actions { position: relative; display: flex; gap: 8px; align-items: center; }
+        #menu-pop {
+            display: none;
+            position: absolute; top: 100%; right: 0; margin-top: 4px;
+            background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 4px;
+            z-index: 160;
+        }
+        #chart-list-pop {
+            display: none;
+            position: absolute; bottom: 70px; right: 16px;
+            background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 6px;
+            max-height: 300px; overflow-y: auto; z-index: 150; width: 200px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        
+        /* Controls */
+        .drawing-controls {
+            position: absolute; left: 16px; top: 16px; display: flex;
+            flex-direction: column; gap: 8px; z-index: 10; pointer-events: none;
+        }.drawing-controls > div { pointer-events: auto; }
+
+        #draw-main-row {
+            margin-bottom: 0px; opacity: 0.6; 
+            display: flex; gap: 8px; align-items: center; white-space: nowrap;
+        }
+
+        #selection-row {
+            margin-top: 4px; opacity: 0.6;  
+            display: flex; gap: 8px; white-space: nowrap;
+        }
+        
+        .btn-rect {
+            padding: 0 12px;
+            height: 36px; border-radius: 4px;
+            border: 1px solid #30363d; background: rgba(22, 27, 34, 0.8);
+            color: #c9d1d9; font-size: 12px; font-weight: 600;
+            cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        .btn-rect:active, .btn-rect.active { background: #21262d; color: #58a6ff; border-color: #58a6ff; }
+        
+        .btn {
+            width: 44px;
+            height: 44px; border-radius: 50%; border: 1px solid #30363d;
+            background: rgba(22, 27, 34, 0.8); color: #c9d1d9; font-size: 16px; font-weight: 600;
+            cursor: pointer; touch-action: manipulation; display: flex; align-items: center; justify-content: center;
+        }
+        .btn:active { background: #21262d; color: #58a6ff; }
+
+        canvas { display: block; background-color: #0d1117; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; }
+
+        /* Modal / Toast */
+        #toast {
+            position: absolute;
+            bottom: 80px; left: 50%; transform: translateX(-50%);
+            padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            display: none; z-index: 300; pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast-good { background: #238636; color: #fff; }
+        .toast-bad { background: #da3633; color: #fff; }
+
+        #add-modal, #suffix-modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 17, 23, 0.8); backdrop-filter: blur(5px);
+            z-index: 200; display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-content { background: #161b22; border: 1px solid #30363d;
+            border-radius: 8px; padding: 20px; width: 300px; }
+        .modal-row { display: flex; gap: 8px;
+            margin-bottom: 16px; justify-content: space-between; }
+        .sel-btn { flex: 1; padding: 8px 0;
+            text-align: center; border: 1px solid #30363d; border-radius: 4px; font-size: 14px; color: #8b949e; cursor: pointer; }
+        .sel-btn.active { background: #1f6feb; color: white; border-color: #1f6feb; }
+        .btn-full { width: 100%; }
+
+        /* Responsive Layout Matrix Configuration */
+        /* Responsive Layout Matrix Configuration */
+        @media (orientation: landscape) {
+            body, html {
+                flex-direction: row !important;
+            }
+            #top-bar {
+                width: 70px !important;
+                height: 100% !important;
+                flex-direction: column !important;
+                border-bottom: none !important;
+                border-left: 1px solid #21262d !important;
+                order: 2;
+                padding: 16px 0 !important;
+                justify-content: flex-start !important;
+            }
+            .main-actions {
+                flex-direction: column !important;
+                gap: 12px !important;
+            }
+            #btn-draw {  order: 1 !important; }
+            #btn-fetch { order: 2 !important; }
+            #main-area { order: 1; flex: 1; height: 100%; }
+            .window-actions {
+                display: flex; flex-direction: column !important; gap: 12px;
+                order: 3 !important; position: relative;
+                margin-top: auto !important;
+            }
+            #chart-list-pop { bottom: 16px !important; right: 86px !important; }
+            #menu-pop { top: auto !important; bottom: 0 !important; right: 50px !important; }
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="top-bar">
+        <div class="main-actions" style="display: flex; gap: 12px;">
+        <button class="btn-rect" id="btn-draw">DRAW</button>
+        <button class="btn-rect" id="btn-fetch" style="color:#58a6ff;">UPDATE</button>
+        </div>
+        <div class="window-actions">
+            <button class="btn" id="btn-add">+</button>
+            <button class="btn" id="btn-list">☰</button>
+            <button class="btn" id="btn-menu">⋮</button>
+            <div id="menu-pop">
+                <button class="btn-rect" id="btn-close" style="color: #da3633; border: none; width: 100%;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-area">
+        <div class="drawing-controls">
+            <div id="draw-main-row">
+                <div id="draw-sub-inputs" style="display:none; gap:8px; align-items: center;">
+                    <button class="btn-rect" id="btn-confirm">GO</button>
+                    <button class="btn-rect" id="btn-left">←</button>
+                    <button class="btn-rect" id="btn-right">→</button>
+                </div>
+            </div>
+            <div id="selection-row">
+                <button class="btn-rect" id="btn-delete" style="display:none; color:#da3633;">DEL</button>
+                <button class="btn-rect" id="btn-copy" style="display:none;">COPY</button>
+                <button class="btn-rect" id="btn-monitor" style="display:none; color:#58a6ff;">MONITOR</button>
+            </div>
+        </div>
+
+        <canvas id="chart" width="1529" height="810"></canvas>
+        
+        <div id="floating-title-container">
+            <div id="title-touch-zone">
+                <div id="window-title">BTC 15m te</div>
+            </div>
+        </div>
+        
+        <div id="toast" class="toast-good" style="display: none;">Good: Updated 200 new candles.</div>
+    </div>
+
+    <div id="chart-list-pop" style="display: none;"></div>
+
+    <div id="add-modal">
+        <div class="modal-content">
+            <div class="modal-row" id="asset-sel">
+                <div class="sel-btn active" data-val="BTCUSDT">BTC</div>
+                <div class="sel-btn" data-val="ETHUSDT">ETH</div>
+                <div class="sel-btn" data-val="SOLUSDT">SOL</div>
+            </div>
+            <div class="modal-row" id="tf-sel">
+                <div class="sel-btn active" data-val="15">15m</div>
+                <div class="sel-btn" data-val="60">H1</div>
+                <div class="sel-btn" data-val="240">H4</div>
+                <div class="sel-btn" data-val="D">D</div>
+                <div class="sel-btn" data-val="W">W</div>
+            </div>
+            <button class="btn-rect btn-full" id="btn-create" style="background:#238636; color:white; border:none; height:44px;">CREATE CHART</button>
+        </div>
+    </div>
+
+    <div id="suffix-modal">
+        <div class="modal-content">
+            <h4 style="margin-bottom:12px; font-size:14px; color:#8b949e;">Edit Extension Info</h4>
+            <input type="text" id="suffix-input" style="width:100%; padding:8px; background:#0d1117; border:1px solid #30363d; color:#c9d1d9; border-radius:4px; margin-bottom:16px; outline:none;" placeholder="Type extension...">
+            <button class="btn-rect btn-full" id="btn-save-suffix" style="background:#1f6feb; color:white; border:none; height:36px;">SAVE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+        
+        let charts = JSON.parse(localStorage.getItem('saved_charts')) || [{ id: 'BTCUSDT_15', symbol: 'BTCUSDT', interval: '15', title: 'BTC 15m', suffix: '' }];
+        let activeIdx = 0;
+         
+        let candles = [];
+        let trendlines = [];
+        let scaleX = 0.5, scaleY = 10, offsetX = 0, offsetY = 0;
+        const spacing = 2;
+
+        let hasInitializedZoom = false;
+        let isDrawingMode = false;
+        let activePoints = [];
+        let currentDotIndex = -1;
+        let targetType = 'high';
+        let drawingStep = 1;
+        let selectedLineIndex = -1;
+        let lastCreateAttempt = null;
+
+        let isDragging = false, isLineDragging = false, isPinching = false, isSwipeScaling = false;
+        let startDragX = 0, startDragY = 0, startOffsetX = 0, startOffsetY = 0, startPinchDist = 0, startScaleX = 0.5;
+        let swipeStartY = 0, swipeStartScaleY = 10;
+        let dragStartPointer = null, dragOriginalLine = null;
+        let lastTapTime = 0;
+
+        function getActiveUnit() { return charts[activeIdx] || charts[0]; }
+
+        function showToast(msg, type = 'good') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = type === 'good' ? 'toast-good' : 'toast-bad';
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2500);
+        }
+
+        async function fetchSmart(isManual = false) {
+            const unit = getActiveUnit();
+            if (!unit) return;
+            
+            try {
+                const response = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${unit.symbol}&interval=${unit.interval}&limit=200`);
+                const data = await response.json();
+                
+                if (data.result && data.result.list) {
+                    const fetched = data.result.list.map(d => ({
+                        timestamp: parseInt(d[0]), open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4])
+                    }));
+                    
+                    let newCount = 0;
+                    let kMap = new Map();
+                    candles.forEach(c => kMap.set(c.timestamp, c));
+                    
+                    fetched.forEach(c => {
+                        if (!kMap.has(c.timestamp)) newCount++;
+                        kMap.set(c.timestamp, c);
+                    });
+                    
+                    candles = Array.from(kMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+                    localStorage.setItem(`k_${unit.id}`, JSON.stringify(candles));
+                    
+                    if (isManual) {
+                        if (newCount > 0) showToast(`Good: Updated ${newCount} new candles.`, 'good');
+                        else showToast(`Up to date. No new candles.`, 'good');
+                    }
+                    
+                    if (!hasInitializedZoom && candles.length > 0) {
+                        hasInitializedZoom = true;
+                        scaleX = 0.5; // Setup minimum configuration width defaults
+                        saveViewState();
+                    }
+                    draw();
+                }
+            } catch (e) {
+                if (isManual) showToast("Bad: Fetch failed.", "bad");
+            }
+        }
+
+        function switchChart(idx) {
+            if (charts.length === 0) return;
+            saveViewState(); 
+            
+            activeIdx = (idx + charts.length) % charts.length;
+            const unit = getActiveUnit();
+            
+            const baseAsset = unit.symbol.replace("USDT", "");
+            const tfLabel = unit.interval === '15' ? '15m' : unit.interval === '60' ? 'H1' : unit.interval === '240' ? 'H4' : unit.interval === 'D' ? 'D' : 'W';
+            const cleanSpec = `${baseAsset} ${tfLabel} `;
+            const suffixStr = unit.suffix || "";
+            document.getElementById('window-title').textContent = cleanSpec + suffixStr;
+            
+            candles = JSON.parse(localStorage.getItem(`k_${unit.id}`) || '[]');
+            trendlines = JSON.parse(localStorage.getItem(`lines_${unit.id}`) || '[]');
+            
+            const viewState = JSON.parse(localStorage.getItem(`view_${unit.id}`) || '{"scaleX":0.5,"scaleY":10,"offsetX":0,"offsetY":0,"hasInitializedZoom":false}');
+            scaleX = Math.max(0.5, viewState.scaleX); 
+            scaleY = viewState.scaleY; 
+            offsetX = viewState.offsetX;
+            offsetY = viewState.offsetY || 0;
+            hasInitializedZoom = viewState.hasInitializedZoom;
+
+            isDrawingMode = false;
+            selectedLineIndex = -1; activePoints = [];
+            document.getElementById('btn-draw').classList.remove('active');
+            document.getElementById('draw-sub-inputs').style.display = 'none';
+            updateDeleteButton();
+            
+            draw();
+            if (candles.length === 0) fetchSmart(false);
+        }
+
+        function saveViewState() {
+            if (!charts[activeIdx]) return;
+            localStorage.setItem(`view_${charts[activeIdx].id}`, JSON.stringify({scaleX, scaleY, offsetX, offsetY, hasInitializedZoom}));
+            localStorage.setItem('saved_charts', JSON.stringify(charts));
+        }
+
+        function saveLines() {
+            if (!charts[activeIdx]) return;
+            localStorage.setItem(`lines_${charts[activeIdx].id}`, JSON.stringify(trendlines));
+        }
+
+        function getXByTimestamp(ts) {
+            const w = canvas.width / window.devicePixelRatio;
+            const startX = w - 80 + offsetX;
+            const idx = candles.findIndex(c => c.timestamp === ts);
+            if (idx === -1) return -9999;
+            const idxFromEnd = candles.length - 1 - idx;
+            return startX - (idxFromEnd * (scaleX + spacing));
+        }
+
+        function getY(p) {
+            const h = canvas.height / window.devicePixelRatio;
+            let minP = Infinity, maxP = -Infinity;
+            candles.forEach(c => { if (c.low < minP) minP = c.low; if (c.high > maxP) maxP = c.high; });
+            const priceRange = maxP - minP;
+            const centerY = h / 2;
+            const centerPrice = minP + (priceRange / 2);
+            if (priceRange === 0) return centerY + offsetY; 
+            return centerY + (centerPrice - p) * (scaleY * (h / priceRange / 15)) + offsetY;
+        }
+
+        function resize() {
+            const rect = document.getElementById('main-area').getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            draw();
+        }
+
+        function draw() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            ctx.clearRect(0, 0, w, h);
+            
+            if (candles.length === 0) return;
+            // Center Horizontal Line Boundary Matrix
+            let minP = Infinity, maxP = -Infinity;
+            candles.forEach(c => { if (c.low < minP) minP = c.low; if (c.high > maxP) maxP = c.high; });
+            const centerPrice = minP + (maxP - minP) / 2;
+            const yCenterPrice = getY(centerPrice);
+            const startX = w - 80 + offsetX; 
+
+            // Candles Architecture Implementation
+            candles.forEach((c, i) => {
+                const idxFromEnd = candles.length - 1 - i;
+                const x = startX - (idxFromEnd * (scaleX + spacing));
+                if (x < -scaleX) return;
+
+                const yOpen = getY(c.open), yClose = getY(c.close);
+                const yHigh = getY(c.high), yLow = getY(c.low);
+                const isBull = c.close >= c.open;
+                
+                // Color Specification: Up in orange, down in gray
+                const color = isBull ? '#ff9500' : '#8e8e93';
+                
+                ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(x + scaleX / 2, yHigh); ctx.lineTo(x + scaleX / 2, yLow); ctx.stroke();
+                ctx.fillRect(x, Math.min(yOpen, yClose), scaleX, Math.max(Math.abs(yClose - yOpen), 1));
+            });
+
+            // Trendlines
+            trendlines.forEach((line, index) => {
+                const x1 = getXByTimestamp(line.p1.idxFromEnd) + scaleX / 2, y1 = getY(line.p1.price);
+                const x2 = getXByTimestamp(line.p2.idxFromEnd) + scaleX / 2, y2 = getY(line.p2.price);
+                
+                if (index === selectedLineIndex) {
+    ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 2.5;
+} else if (line.isSimp) { ctx.strokeStyle = '#238636'; ctx.lineWidth = 1.5;
+} else { ctx.strokeStyle = '#8b949e'; ctx.lineWidth = 1.5;}
+
+                ctx.beginPath(); ctx.moveTo(x1, y1);
+                const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy);
+                if (len > 0.01) {
+                    ctx.lineTo(x1 + (dx / len) * 10000, y1 + (dy / len) * 10000); ctx.stroke();
+                }
+
+                if (index === selectedLineIndex) {
+                    ctx.fillStyle = '#1f6feb';
+                }
+            });
+
+            activePoints.forEach(pt => {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)'; ctx.beginPath();
+                ctx.arc(getXByTimestamp(pt.idxFromEnd) + scaleX / 2, getY(pt.price), 3.5, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // Hover Cursor
+            if (isDrawingMode && currentDotIndex !== -1) {
+                const tCan = candles.find(c => c.timestamp === currentDotIndex);
+                if (tCan) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 1; ctx.beginPath();
+                    ctx.arc(getXByTimestamp(currentDotIndex) + scaleX / 2, getY(targetType === 'high' ? tCan.high : tCan.low), 3, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+                }
+            }
+        }
+
+        function updateHoverPoint(x, y) {
+            const radius = 50;
+            let bestDist = radius, bestCandle = null, bestType = null;
+            const startX = (canvas.width / window.devicePixelRatio) - 80 + offsetX;
+            for (let i = 0; i < candles.length; i++) {
+                const cObj = candles[i];
+                const cx = startX - ((candles.length - 1 - i) * (scaleX + spacing)) + scaleX / 2;
+                if (Math.abs(x - cx) > radius) continue;
+                
+                const distHigh = Math.hypot(x - cx, y - getY(cObj.high));
+                if (distHigh < bestDist) { bestDist = distHigh; bestCandle = cObj; bestType = 'high'; }
+
+                const distLow = Math.hypot(x - cx, y - getY(cObj.low));
+                if (distLow < bestDist) { bestDist = distLow; bestCandle = cObj; bestType = 'low'; }
+            }
+
+            if (bestCandle) { currentDotIndex = bestCandle.timestamp; targetType = bestType; return; }
+
+            let minDist = Infinity;
+            for (let i = 0; i < candles.length; i++) {
+                const dist = Math.abs(x - (startX - ((candles.length - 1 - i) * (scaleX + spacing)) + scaleX / 2));
+                if (dist < minDist) { minDist = dist; currentDotIndex = candles[i].timestamp; }
+            }
+            const tCan = candles.find(c => c.timestamp === currentDotIndex);
+            if (tCan) targetType = Math.abs(y - getY(tCan.high)) < Math.abs(y - getY(tCan.low)) ? 'high' : 'low';
+        }
+
+        function onPointerDown(e) {
+            if (isSwipeScaling) return;
+            const touch = e.touches?.[0] ?? e.changedTouches?.[0];
+            const cx = e.clientX !== undefined ? e.clientX : touch?.clientX ?? 0;
+            const cy = (e.clientY !== undefined ? e.clientY : touch?.clientY ?? 0) - (document.getElementById('top-bar').getBoundingClientRect().height * (window.innerWidth > window.innerHeight ? 0 : 1));
+            
+            if (isDrawingMode) {
+                if (cy < 100 && cx < 350) return;
+                updateHoverPoint(cx, cy); draw(); return;
+            }
+
+            let clickedLineIdx = -1;
+            trendlines.forEach((line, index) => {
+                const x1 = getXByTimestamp(line.p1.idxFromEnd) + scaleX / 2, y1 = getY(line.p1.price);
+                const x2 = getXByTimestamp(line.p2.idxFromEnd) + scaleX / 2, y2 = getY(line.p2.price);
+                const A = cx - x1, B = cy - y1, C = x2 - x1, D = y2 - y1;
+         
+                const lenSq = C * C + D * D;
+                const param = lenSq !== 0 ? (A * C + B * D) / lenSq : -1;
+                const extX = param < 0 ? x1 : x1 + param * C, extY = param < 0 ? y1 : y1 + param * D;
+         
+                if (Math.hypot(cx - extX, cy - extY) < 25) clickedLineIdx = index;
+            });
+
+            if (clickedLineIdx !== -1) {
+                selectedLineIndex = clickedLineIdx;
+                isDragging = false; isLineDragging = true;
+                dragStartPointer = { x: cx, y: cy }; dragOriginalLine = JSON.parse(JSON.stringify(trendlines[selectedLineIndex]));
+            } else { 
+                selectedLineIndex = -1;
+                isDragging = true; 
+                startDragX = cx - offsetX; 
+                startDragY = cy - offsetY;
+            }
+            updateDeleteButton();
+            draw();
+        }
+
+        function onPointerMove(e) {
+            if (isSwipeScaling) return;
+            const touch = e.touches?.[0] ?? e.changedTouches?.[0];
+            const cx = e.clientX !== undefined ? e.clientX : touch?.clientX ?? 0;
+            const cy = (e.clientY !== undefined ? e.clientY : touch?.clientY ?? 0) - (document.getElementById('top-bar').getBoundingClientRect().height * (window.innerWidth > window.innerHeight ? 0 : 1));
+            
+            if (isLineDragging && selectedLineIndex !== -1) {
+                const candleShift = Math.round((cx - dragStartPointer.x) / (scaleX + spacing));
+                let minP = Infinity, maxP = -Infinity;
+                candles.forEach(c => { if (c.low < minP) minP = c.low; if (c.high > maxP) maxP = c.high; });
+                const priceShift = -(cy - dragStartPointer.y) * ((maxP - minP) / (scaleY * (canvas.height/window.devicePixelRatio / 15)));
+                
+                const line = trendlines[selectedLineIndex];
+                const p1Idx = candles.findIndex(c => c.timestamp === dragOriginalLine.p1.idxFromEnd);
+                const p2Idx = candles.findIndex(c => c.timestamp === dragOriginalLine.p2.idxFromEnd);
+                if (p1Idx !== -1) line.p1.idxFromEnd = candles[Math.max(0, Math.min(candles.length - 1, p1Idx + candleShift))]?.timestamp || line.p1.idxFromEnd;
+                if (p2Idx !== -1) line.p2.idxFromEnd = candles[Math.max(0, Math.min(candles.length - 1, p2Idx + candleShift))]?.timestamp || line.p2.idxFromEnd;
+                
+                line.p1.price = dragOriginalLine.p1.price + priceShift;
+                line.p2.price = dragOriginalLine.p2.price + priceShift;
+                draw(); return;
+            }
+
+            if (!isDragging) return;
+            offsetX = cx - startDragX;
+            
+            // Outer Space Prevention Pan Boundary Algorithm
+offsetY = cy - startDragY;
+
+if (candles.length > 0) {
+    let minP = Infinity, maxP = -Infinity;
+    candles.forEach(c => { if (c.low < minP) minP = c.low; if (c.high > maxP) maxP = c.high; });
+    
+    const h = canvas.height / window.devicePixelRatio;
+    const centerPrice = minP + (maxP - minP) / 2;
+    const yCenterPrice = getY(centerPrice);
+    
+    if (yCenterPrice > h) { offsetY -= (yCenterPrice - h); }
+    if (yCenterPrice < 0) { offsetY -= yCenterPrice; }
+}
+            draw();
+        }
+
+        function onPointerUp() { 
+            isDragging = false;
+            if (isLineDragging) saveLines(); 
+            isLineDragging = false; 
+            saveViewState(); 
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                isPinching = true; isDragging = false; isLineDragging = false;
+                startPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                startScaleX = scaleX; startOffsetX = offsetX; startOffsetY = offsetY;
+            } else if (!isPinching) onPointerDown(e);
+        });
+        
+        window.addEventListener('touchmove', e => {
+            if (isPinching && e.touches.length === 2) {
+                e.preventDefault(); 
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                const newScale = Math.max(0.5, Math.min(30, startScaleX * (dist / startPinchDist)));
+             
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const rm = window.innerWidth - 80;
+                offsetX = cx - rm - ((cx - rm - startOffsetX) / (startScaleX + spacing)) * (newScale + spacing);
+                scaleX = newScale; draw();
+            } else if (!isPinching && e.touches.length === 1) onPointerMove(e);
+        }, { passive: false });
+        
+        window.addEventListener('touchend', e => {
+            if (e.touches.length < 2) isPinching = false;
+            if (e.touches.length === 0) onPointerUp();
+        });
+        
+        canvas.addEventListener('mousemove', e => {
+            if (!isDrawingMode || isDragging || isPinching || isLineDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX ?? e.touches?.[0]?.clientX ?? 0) - rect.left;
+            const y = (e.clientY ?? e.touches?.[0]?.clientY ?? 0) - rect.top;
+            if (y < 100 && x < 350) return;
+            updateHoverPoint(x, y); draw();
+        });
+
+        function updateDeleteButton() {
+            const hasSelection = selectedLineIndex !== -1;
+            document.getElementById('btn-delete').style.display = hasSelection ? 'flex' : 'none';
+            document.getElementById('btn-copy').style.display = hasSelection ? 'flex' : 'none';
+            document.getElementById('btn-monitor').style.display = hasSelection ? 'flex' : 'none';
+        }
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            if (selectedLineIndex === -1) return;
+            trendlines.splice(selectedLineIndex, 1); selectedLineIndex = -1;
+            saveLines(); updateDeleteButton(); draw();
+        });
+        
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            if (selectedLineIndex === -1) return;
+            const o = trendlines[selectedLineIndex];
+            trendlines.push({
+                p1: { idxFromEnd: o.p1.idxFromEnd, price: o.p1.price + 100 }, p2: { idxFromEnd: o.p2.idxFromEnd, price: o.p2.price + 100 }
+            });
+            selectedLineIndex = trendlines.length - 1; saveLines(); updateDeleteButton(); draw();
+        });
+
+        let drawTimer;
+let isLongPress = false;
+
+const drawBtn = document.getElementById('btn-draw');
+
+function handleSimpAutoDraw() {
+    if (candles.length === 0) return;
+    
+    // Calculate the candle in the exact middle of the visible canvas screen
+    const w = canvas.width / window.devicePixelRatio;
+    const startX = w - 80 + offsetX;
+    let centerCandle = null;
+    let minDiff = Infinity;
+    
+    candles.forEach((c, i) => {
+        const idxFromEnd = candles.length - 1 - i;
+        const x = startX - (idxFromEnd * (scaleX + spacing));
+        const diff = Math.abs(x - (w / 2));
+        if (diff < minDiff) {
+            minDiff = diff;
+            centerCandle = c;
+        }
+    });
+
+    if (!centerCandle) centerCandle = candles[Math.floor(candles.length / 2)];
+    const p1Idx = candles.findIndex(c => c.timestamp === centerCandle.timestamp);
+    const targetIdx = Math.min(candles.length - 1, p1Idx + 3);
+    const p2Candle = candles[targetIdx];
+
+    // Push the line with a distinct color flag
+    trendlines.push({
+        p1: { idxFromEnd: centerCandle.timestamp, price: centerCandle.high },
+        p2: { idxFromEnd: p2Candle.timestamp, price: centerCandle.high },
+        isSimp: true
+    });
+
+    saveLines(); draw();
+}
+
+// Mobile Touch Tracks
+drawBtn.addEventListener('touchstart', (e) => {
+    isLongPress = false;
+    drawTimer = setTimeout(() => {
+        isLongPress = true;
+        handleSimpAutoDraw();
+    }, 500);
+});
+
+drawBtn.addEventListener('touchend', (e) => {
+    clearTimeout(drawTimer);
+    if (isLongPress) {
+        e.preventDefault(); // Prevents simulated mouse clicks on mobile
+    }
+});
+
+// Desktop Fallbacks
+drawBtn.addEventListener('mousedown', () => {
+    isLongPress = false;
+    drawTimer = setTimeout(() => {
+        isLongPress = true;
+        handleSimpAutoDraw();
+    }, 500);
+});
+
+drawBtn.addEventListener('click', (e) => {
+    clearTimeout(drawTimer);
+    if (isLongPress) {
+        e.preventDefault();
+        return;
+    }
+
+    isDrawingMode = !isDrawingMode; selectedLineIndex = -1;
+    activePoints = []; targetType = 'high'; drawingStep = 1;
+    currentDotIndex = candles[Math.max(0, candles.length - 15)]?.timestamp || 0;
+    drawBtn.classList.toggle('active', isDrawingMode);
+    document.getElementById('draw-sub-inputs').style.display = isDrawingMode ? 'flex' : 'none';
+    draw();
+});
+        
+        document.getElementById('btn-confirm').addEventListener('click', () => {
+            if (!isDrawingMode || currentDotIndex === -1) return;
+            const tc = candles.find(c => c.timestamp === currentDotIndex);
+            if (!tc) return;
+            const pVal = targetType === 'high' ? tc.high : tc.low;
+
+            if (drawingStep === 1) {
+                activePoints.push({ idxFromEnd: currentDotIndex, price: pVal });
+                currentDotIndex = candles[Math.min(candles.length - 1, Math.max(0, candles.findIndex(c => c.timestamp === currentDotIndex) + 3))].timestamp;
+                targetType = 'high'; drawingStep = 2;
+            } else if (drawingStep === 2) {
+                activePoints.push({ idxFromEnd: currentDotIndex, price: pVal });
+                trendlines.push({ p1: { ...activePoints[0] }, p2: { ...activePoints[1] } });
+                activePoints = []; isDrawingMode = false; currentDotIndex = -1; drawingStep = 1;
+                document.getElementById('btn-draw').classList.remove('active');
+                document.getElementById('draw-sub-inputs').style.display = 'none';
+                saveLines();
+            }
+            draw();
+        });
+        
+        document.getElementById('btn-left').addEventListener('click', () => {
+            if (isDrawingMode && currentDotIndex !== -1) {
+                const idx = candles.findIndex(c => c.timestamp === currentDotIndex);
+                if (idx > 0) { currentDotIndex = candles[idx - 1].timestamp; draw(); }
+            }
+        });
+        document.getElementById('btn-right').addEventListener('click', () => {
+            if (isDrawingMode && currentDotIndex !== -1) {
+                const idx = candles.findIndex(c => c.timestamp === currentDotIndex);
+                if (idx !== -1 && idx < candles.length - 1) { currentDotIndex = candles[idx + 1].timestamp; draw(); }
+            }
+        });
+        
+        document.getElementById('btn-fetch').addEventListener('click', () => fetchSmart(true));
+        
+        document.getElementById('btn-menu').addEventListener('click', () => {
+            const p = document.getElementById('menu-pop'); p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        });
+        document.getElementById('btn-close').addEventListener('click', () => {
+            if (charts.length <= 1) return alert("Cannot close the last chart unit.");
+            charts.splice(activeIdx, 1);
+            localStorage.setItem('saved_charts', JSON.stringify(charts));
+            document.getElementById('menu-pop').style.display = 'none';
+            switchChart(activeIdx >= charts.length ? 0 : activeIdx);
+        });
+
+        // Suffix Double-Tap Trigger & Window Configuration Logic
+        const touchZone = document.getElementById('title-touch-zone');
+        touchZone.addEventListener('click', (e) => {
+            const now = Date.now();
+            if (now - lastTapTime < 300) {
+                const unit = getActiveUnit();
+                document.getElementById('suffix-modal').style.display = 'flex';
+                document.getElementById('suffix-input').value = unit.suffix || "";
+                document.getElementById('suffix-input').focus();
+            }
+            lastTapTime = now;
+        });
+
+        document.getElementById('btn-save-suffix').addEventListener('click', () => {
+            const unit = getActiveUnit();
+            if (unit) {
+                unit.suffix = document.getElementById('suffix-input').value.trim();
+                localStorage.setItem('saved_charts', JSON.stringify(charts));
+                switchChart(activeIdx);
+            }
+            document.getElementById('suffix-modal').style.display = 'none';
+        });
+
+        // Seamless Drag-Vertical-Scale Handle Trackers
+        touchZone.addEventListener('mousedown', (e) => {
+            isSwipeScaling = true; swipeStartY = e.clientY; swipeStartScaleY = scaleY;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isSwipeScaling) return;
+            const deltaY = swipeStartY - e.clientY;
+            scaleY = Math.max(0.2, swipeStartScaleY * Math.exp(deltaY * 0.006));
+            saveViewState(); draw();
+        });
+        window.addEventListener('mouseup', () => { isSwipeScaling = false; });
+
+        touchZone.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isSwipeScaling = true; swipeStartY = e.touches[0].clientY; swipeStartScaleY = scaleY;
+                e.stopPropagation();
+            }
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (!isSwipeScaling) return;
+            const deltaY = swipeStartY - e.touches[0].clientY;
+            scaleY = Math.max(0.2, swipeStartScaleY * Math.exp(deltaY * 0.006));
+            saveViewState(); draw();
+        });
+        window.addEventListener('touchend', () => { isSwipeScaling = false; });
+
+        // List View Dropdown Panel Matrix
+        const listBtn = document.getElementById('btn-list');
+        const listPop = document.getElementById('chart-list-pop');
+        listBtn.addEventListener('click', (e) => {
+            if (listPop.style.display === 'block') {
+                listPop.style.display = 'none';
+            } else {
+                listPop.innerHTML = '';
+                charts.forEach((c, idx) => {
+                    const d = document.createElement('div');
+                    d.className = 'btn-rect';
+                    d.style.marginBottom = '4px';
+                    d.style.justifyContent = 'flex-start';
+                    
+                    const baseAsset = c.symbol.replace("USDT", "");
+                    const tfLabel = c.interval === '15' ? '15m' : c.interval === '60' ? 'H1' : c.interval === '240' ? 'H4' : c.interval === 'D' ? 'D' : 'W';
+                    d.textContent = `${baseAsset} ${tfLabel} ${c.suffix || ""}`.trim();
+                    
+                    if (idx === activeIdx) d.style.borderColor = '#58a6ff';
+                    d.addEventListener('click', () => { switchChart(idx); listPop.style.display = 'none'; });
+                    listPop.appendChild(d);
+                });
+                listPop.style.display = 'block';
+                e.stopPropagation();
+            }
+        });
+        window.addEventListener('click', () => { listPop.style.display = 'none'; });
+
+        const modal = document.getElementById('add-modal');
+        document.getElementById('btn-add').addEventListener('click', () => modal.style.display = 'flex');
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        
+        document.querySelectorAll('#asset-sel .sel-btn').forEach(b => b.addEventListener('click', e => {
+            document.querySelectorAll('#asset-sel .sel-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+        }));
+        document.querySelectorAll('#tf-sel .sel-btn').forEach(b => b.addEventListener('click', e => {
+            document.querySelectorAll('#tf-sel .sel-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+        }));
+        
+        document.getElementById('btn-create').addEventListener('click', () => {
+            const sym = document.querySelector('#asset-sel .active').getAttribute('data-val');
+            const tf = document.querySelector('#tf-sel .active').getAttribute('data-val');
+            
+            const matchExists = charts.some(c => c.symbol === sym && c.interval === tf);
+            const cacheKey = `${sym}_${tf}`;
+            
+            if (matchExists && lastCreateAttempt !== cacheKey) {
+                lastCreateAttempt = cacheKey;
+                showToast("Chart already exists. Tap again to confirm.", "bad");
+                return;
+            }
+            
+            lastCreateAttempt = null;
+            const newUnit = { id: `${sym}_${tf}_${Date.now()}`, symbol: sym, interval: tf, suffix: '' };
+            charts.push(newUnit); localStorage.setItem('saved_charts', JSON.stringify(charts));
+            modal.style.display = 'none';
+            switchChart(charts.length - 1);
+        });
+
+        // Line Monitoring Transmission Uplink
+        document.getElementById('btn-monitor').addEventListener('click', async () => {
+            if (selectedLineIndex === -1) return;
+            const line = trendlines[selectedLineIndex];
+            const unit = getActiveUnit();
+            
+            const payload = {
+                id: `${unit.id}_${line.p1.idxFromEnd}_${Date.now()}`,
+                symbol: unit.symbol,
+                interval: unit.interval,
+                p1: { timestamp: line.p1.idxFromEnd, price: line.p1.price },
+                p2: { timestamp: line.p2.idxFromEnd, price: line.p2.price }
+            };
+
+            try {
+                const r = await fetch('http://18.162.56.220:2449/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (r.ok) showToast("Task sent to monitor server.", "good");
+                else showToast("Server refused monitor sync payload.", "bad");
+            } catch(err) {
+                showToast("Network pipeline context failure.", "bad");
+            }
+        });
+        window.addEventListener('blur', () => { isDragging = false; isLineDragging = false; isPinching = false; isSwipeScaling = false; });
+        document.addEventListener('visibilitychange', () => { isDragging = false; isLineDragging = false; isPinching = false; isSwipeScaling = false; });
+        window.addEventListener('resize', resize);
+        resize();
+        switchChart(0);
+    </script>
+
+</body></html>
