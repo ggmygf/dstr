@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Row Unit Web Builder</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f5f7; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    
+    .builder-container { width: 100%; max-width: 800px; }
+    
+    /* Row Unit Styling */
+    .row-unit {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+    .unit-controls {
+      position: absolute;
+      top: -12px;
+      right: 12px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      z-index: 10;
+    }
+
+    .unit-tag {
+      position: absolute;
+      top: -14px;
+      left: 12px;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 11px;
+      color: #666;
+      cursor: text;
+      padding: 1px 4px;
+      border-radius: 3px;
+      z-index: 10;
+      min-width: 20px;
+      height: 18px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .unit-tag:hover, .unit-tag:focus {
+      background: #ffffff;
+      border: 1px solid #ccc;
+    }
+    
+    .unit-controls button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .unit-controls button:hover { background: #eee; }
+    
+    /* Fixed Container for Image Area */
+    .img-box {
+      width: 200px;
+      height: 200px;
+      border: 2px dashed #bbb;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #777;
+      background: #fafafa;
+      position: relative;
+      flex-shrink: 0;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    
+    .img-box.hover { border-color: #0066ff; background: #e6f0ff; }
+    
+    /* Show full image inside box without distortion or cropping */
+    .img-box img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      object-fit: contain; 
+    }
+    .img-box input[type="file"] { display: none; }
+
+    /* Description Content Area */
+    .text-content { flex-grow: 1; display: flex; flex-direction: column; }
+    .text-content textarea {
+      font-size: 14px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      resize: vertical;
+      min-height: 180px;
+      width: 100%;
+    }
+
+    /* Action Buttons */
+    /* Action Buttons */
+    .actions { display: flex; justify-content: center; margin: 20px 0; }
+    .btn {
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-generate { background: #107c41; color: white; }
+    .btn-generate:hover { background: #0b5c30; }
+
+    /* Inline Add Divider Button */
+    .add-divider {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: -10px 0;
+      position: relative;
+      z-index: 10;
+    }
+    .add-btn-inline {
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      color: #555;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(15px) rotate(-8deg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+    }
+    .add-btn-inline:hover {
+      background: #0066ff;
+      color: #fff;
+      border-color: #0066ff;
+      transform: translateX(15px) rotate(0deg) scale(1.15);
+    }
+
+    /* Output Box */
+    .output-container { width: 100%; max-width: 800px; display: none; }
+    .output-container textarea {
+      width: 100%;
+      height: 250px;
+      background: #1e1e1e;
+      color: #00ff66;
+      font-family: monospace;
+      padding: 12px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Row Unit Builder</h2>
+
+  <div class="add-divider"><button class="add-btn-inline" onclick="addUnit(0)" title="Add Unit">+</button></div>
+  <div class="builder-container" id="unitList"></div>
+
+  <style>
+    .output-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin-top: 20px;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 6px 12px;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .copy-btn:hover { background: #555; }
+  </style>
+
+  <div class="actions">
+    <button class="btn btn-generate" id="generateBtn" onclick="generateHTML()">Generate HTML</button>
+  </div>
+
+  <div class="output-wrapper" id="outputWrapper" style="display: none;">
+    <button class="copy-btn" id="copyBtn" onclick="copyOutputText()">Copy</button>
+    <div class="output-container" style="display: block;">
+      <textarea id="outputBox" readonly></textarea>
+    </div>
+  </div>
+
+  <div id="importZone" style="margin-top: 15px; border: 1px dashed #aaa; padding: 8px; text-align: center; border-radius: 4px; font-size: 12px; color: #666; background: #fff; cursor: pointer;" onclick="document.getElementById('importFile').click()" ondragover="event.preventDefault()" ondrop="handleImportDrop(event)">
+    <span>Drop .txt / .html file here or click to import</span>
+    <input type="file" id="importFile" accept=".html,.txt" style="display:none;" onchange="handleImportFile(this.files[0])">
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => addUnit());
+
+    function createAddDivider(index) {
+      const div = document.createElement("div");
+      div.className = "add-divider";
+      div.innerHTML = `<button class="add-btn-inline" onclick="addUnit(${index})" title="Add Unit">+</button>`;
+      return div;
+    }
+
+    function addUnit(targetIndex = null) {
+      const container = document.getElementById("unitList");
+      const unit = document.createElement("div");
+      unit.className = "row-unit";
+
+      unit.innerHTML = `
+        <input type="text" class="unit-tag" placeholder="" title="Click to add text label" />
+        <div class="unit-controls">
+          <button onclick="moveUp(this)">▲</button>
+          <button onclick="moveDown(this)">▼</button>
+          <button onclick="removeUnit(this)">✕</button>
+        </div>
+        <div class="img-box" onclick="triggerFileInput(this)">
+          <span>Drag & Drop image<br>or click to select</span>
+          <img style="display:none;" />
+          <input type="file" accept="image/*" onchange="handleFileSelect(this)">
+        </div>
+        <div class="text-content">
+          <textarea placeholder="Write description here..." class="input-desc"></textarea>
+        </div>
+      `;
+
+      setupDragAndDrop(unit.querySelector('.img-box'));
+
+      const units = container.querySelectorAll('.row-unit');
+      if (targetIndex !== null && units[targetIndex]) {
+        container.insertBefore(unit, units[targetIndex]);
+      } else {
+        container.appendChild(unit);
+      }
+      refreshDividers();
+    }
+
+    function removeUnit(btn) {
+      btn.closest('.row-unit').remove();
+      refreshDividers();
+    }
+
+    function refreshDividers() {
+      const container = document.getElementById("unitList");
+      container.querySelectorAll('.add-divider').forEach(el => el.remove());
+      const units = container.querySelectorAll('.row-unit');
+      units.forEach((unit, index) => {
+        unit.after(createAddDivider(index + 1));
+      });
+    }
+
+    function moveUp(btn) {
+      const unit = btn.closest('.row-unit');
+      if (unit.previousElementSibling) {
+        unit.parentNode.insertBefore(unit, unit.previousElementSibling);
+        refreshDividers();
+      }
+    }
+
+    function moveDown(btn) {
+      const unit = btn.closest('.row-unit');
+      if (unit.nextElementSibling) {
+        unit.parentNode.insertBefore(unit.nextElementSibling, unit);
+        refreshDividers();
+      }
+    }
+
+    function moveUp(btn) {
+      const unit = btn.closest('.row-unit');
+      if (unit.previousElementSibling) {
+        unit.parentNode.insertBefore(unit, unit.previousElementSibling);
+      }
+    }
+
+    function moveDown(btn) {
+      const unit = btn.closest('.row-unit');
+      if (unit.nextElementSibling) {
+        unit.parentNode.insertBefore(unit.nextElementSibling, unit);
+      }
+    }
+
+    function triggerFileInput(zone) {
+      zone.querySelector('input[type="file"]').click();
+    }
+
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        processAndCompressImage(input.files[0], input.closest('.img-box'));
+      }
+    }
+
+    function setupDragAndDrop(zone) {
+      ['dragenter', 'dragover'].forEach(name => {
+        zone.addEventListener(name, (e) => { e.preventDefault(); zone.classList.add('hover'); }, false);
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        zone.addEventListener(name, (e) => { e.preventDefault(); zone.classList.remove('hover'); }, false);
+      });
+      zone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          processAndCompressImage(files[0], zone);
+        }
+      }, false);
+    }
+
+    /* Image Compression Logic */
+    function processAndCompressImage(file, zone) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          // Resize long edges to max 800px to optimize filesize
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.7 quality
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+          const displayImg = zone.querySelector('img');
+          const span = zone.querySelector('span');
+          displayImg.src = compressedDataUrl;
+          displayImg.style.display = 'block';
+          span.style.display = 'none';
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+function handleImportDrop(e) {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImportFile(e.dataTransfer.files[0]);
+      }
+    }
+
+    function handleImportFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        parseAndLoadHTML(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseAndLoadHTML(htmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+      
+      const importedUnits = doc.body ? doc.body.children : [];
+      if (!importedUnits || importedUnits.length === 0) return;
+
+      const container = document.getElementById("unitList");
+      container.innerHTML = '';
+
+      Array.from(importedUnits).forEach(unitNode => {
+        if (unitNode.nodeType !== 1) return;
+
+        addUnit();
+        const currentUnits = container.querySelectorAll('.row-unit');
+        const lastUnit = currentUnits[currentUnits.length - 1];
+
+        // Tag / Subtitle
+        const tagInput = lastUnit.querySelector('.unit-tag');
+        const tagElement = Array.from(unitNode.children).find(el => 
+          el.style && (el.style.position === 'absolute' || el.style.fontSize === '11px')
+        );
+        tagInput.value = tagElement ? tagElement.textContent.trim() : '';
+
+        // Image
+        const imgElement = unitNode.querySelector('img');
+        if (imgElement && imgElement.getAttribute('src')) {
+          const imgBox = lastUnit.querySelector('.img-box');
+          const displayImg = imgBox.querySelector('img');
+          const span = imgBox.querySelector('span');
+          displayImg.src = imgElement.getAttribute('src');
+          displayImg.style.display = 'block';
+          if (span) span.style.display = 'none';
+        }
+
+        // Description Text
+        const descTextarea = lastUnit.querySelector('.input-desc');
+        const textWrapper = Array.from(unitNode.children).find(el => 
+          el !== tagElement && !el.querySelector('img')
+        );
+        descTextarea.value = textWrapper ? textWrapper.textContent.trim() : '';
+      });
+    }
+    /* Output Standalone HTML */
+    function generateHTML() {
+      const units = document.querySelectorAll('.row-unit');
+      let bodyContent = '';
+
+      units.forEach(unit => {
+        const imgSrc = unit.querySelector('img').src;
+        const desc = unit.querySelector('.input-desc').value;
+        const tagText = unit.querySelector('.unit-tag').value.trim();
+
+        // Image area set to 200x200 fixed frame; object-fit: contain preserves aspect ratio
+        const imageMarkup = imgSrc ? `
+    <div style="width: 200px; height: 200px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: transparent; border-radius: 6px;">
+      <img src="${imgSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+    </div>` : '';
+
+        const tagMarkup = tagText ? `<div style="position: absolute; top: -14px; left: 12px; font-size: 11px; color: #666; padding: 1px 4px; border-radius: 3px; background: #fff; border: 1px solid #ccc;">${tagText}</div>` : '';
+
+        bodyContent += `
+  <div style="position: relative; display: flex; gap: 20px; align-items: center; margin-bottom: 24px; font-family: sans-serif; background: #ffffff; padding: 16px; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6); min-width: 0;">
+    ${tagMarkup}
+    ${imageMarkup}
+    <div style="flex: 1 1 0%; min-width: 0; color: #333; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${desc}</div>
+  </div>`;
+      });
+
+      const fullHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exported Page</title>
+</head>
+<body style="max-width: 800px; margin: 40px auto; padding: 0 20px; background-color: #fdfdfd;">
+${bodyContent}
+</body>
+</html>`;
+
+      const outputBox = document.getElementById('outputBox');
+      outputBox.value = fullHTML;
+      document.getElementById('outputWrapper').style.display = 'block';
+    }
+
+    function copyOutputText() {
+      const outputBox = document.getElementById('outputBox');
+      outputBox.select();
+      navigator.clipboard.writeText(outputBox.value).then(() => {
+        const copyBtn = document.getElementById('copyBtn');
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
