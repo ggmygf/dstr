@@ -206,8 +206,8 @@
     </div>
 
     <div id="main-area">
-    <button class="btn-rect" id="btn-confirm" style="display: none; position: fixed; z-index: 400; padding: 0px 10px; height: 28px; font-size: 11px; background: rgb(35, 134, 54); color: rgb(255, 255, 255); border-color: rgb(35, 134, 54); box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 8px; left: 942.75px; top: 510.635782px;">GO</button>
-    <div id="fib-sliders" style="display: none; position: absolute; bottom: 16px; right: 16px; z-index: 100; flex-direction: column; gap: 20px; background: rgba(22, 27, 34, 0.85); padding: 12px 14px; border-radius: 6px; border: 1px solid rgb(48, 54, 61); backdrop-filter: blur(4px);transform: scale(2.5); transform-origin: bottom right;">
+    <button class="btn-rect" id="btn-confirm" style="display: none; position: fixed; z-index: 400; padding: 0px 10px; height: 28px; font-size: 11px; background: rgb(35, 134, 54); color: rgb(255, 255, 255); border-color: rgb(35, 134, 54); box-shadow: rgba(0, 0, 0, 0.5) 0px 2px 8px; left: 939.25px; top: 495.52065px;">GO</button>
+    <div id="fib-sliders" style="display: none; position: absolute; bottom: 16px; right: 16px; z-index: 100; flex-direction: column; gap: 20px; background: rgba(22, 27, 34, 0.85); padding: 12px 14px; border-radius: 6px; border: 1px solid rgb(48, 54, 61); backdrop-filter: blur(4px); transform: scale(2.5); transform-origin: right bottom;">
         <input type="range" id="fib-pos-slider" min="-1" max="1" step="0.01" value="0" style="width:60px; height:3px; -webkit-appearance:none; appearance:none; background:#30363d; border-radius:2px; outline:none;">
         <input type="range" id="fib-len-slider" min="-1" max="1" step="0.01" value="0" style="width:60px; height:3px; -webkit-appearance:none; appearance:none; background:#30363d; border-radius:2px; outline:none;">
         <style>
@@ -228,7 +228,7 @@
                 <button class="btn-rect" id="btn-copy" style="display: none;">COPY</button>
                 <button class="btn-rect" id="btn-monitor" style="display: none; color: rgb(88, 166, 255);">MONITOR</button>
             </div>
-            <div class="color-row" id="color-row">
+            <div class="color-row" id="color-row" style="display: none;">
                 <button class="btn-sq" data-color="#58a6ff" style="background:#58a6ff;"></button>
                 <button class="btn-sq" data-color="#238636" style="background:#238636;"></button>
                 <button class="btn-sq" data-color="#da3633" style="background:#da3633;"></button>
@@ -237,7 +237,7 @@
                 <button class="btn-sq" data-color="#f0883e" style="background:#f0883e;"></button>
                 <button class="btn-sq" data-color="#39c5bb" style="background:#39c5bb;"></button>
             </div>
-            <div class="color-row" id="opacity-row">
+            <div class="color-row" id="opacity-row" style="display: none;">
                 <input type="range" id="brightness-slider" min="0.2" max="1" step="0.01" value="1" style="width: 204px; height: 4px; -webkit-appearance: none; appearance: none; background: #30363d; border-radius: 2px; outline: none;">
             </div>
         </div>
@@ -250,7 +250,7 @@
             </div>
         </div>
         
-        <div id="toast" class="toast-good" style="display: none;">Good: Updated 300 new candles.</div>
+        <div id="toast" class="toast-good" style="display: none;">Good: Updated 1 new candles.</div>
     </div>
 
     <div id="chart-list-pop" style="display: none;"><div class="btn-rect" style="margin-bottom: 4px; justify-content: flex-start; border-color: rgb(88, 166, 255);">BTC 15m</div></div>
