@@ -1,7 +1,7 @@
 <html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimalist BTC Chart Pro</title>
+    <title>OooOoooOooOOOo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -282,11 +282,11 @@
 
         <canvas id="chart" width="1413" height="652"></canvas>
         
-        <div id="floating-title-container" style="display: flex; flex-direction: row; align-items: center; gap: 12px;">
+        <div id="floating-title-container" style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
             <div id="title-touch-zone">
                 <div id="window-title">BTC 15m </div>
             </div>
-            <div id="set-indicators" style="display: flex; gap: 8px; align-items: center; background: rgba(22, 27, 34, 0.85); padding: 6px 12px; border-radius: 20px; border: 1px solid #30363d; backdrop-filter: blur(4px);"></div>
+            <div id="set-indicators" style="display: flex; gap: 6px; align-items: center;"></div>
         </div>
         
         <div id="toast" class="toast-good" style="display: none;">Good: Updated 3 new candles.</div>
@@ -324,6 +324,7 @@
         
         let charts = JSON.parse(localStorage.getItem('saved_charts')) || [{ id: 'BTCUSDT_15', symbol: 'BTCUSDT', interval: '15', title: 'BTC 15m', suffix: '' }];
         let activeIdx = 0;
+        let chartFilterMode = 'default';
         let candles = [];
         let trendlines = [];
         // Track hidden sets by a unique key derived from their origin points
@@ -394,10 +395,10 @@ function renderSetIndicators() {
                 const isHidden = hiddenSets.has(setData.key);
                 const circle = document.createElement('div');
                 
-                // Styling the circle: 16px radius/size, border-radius 50%
+                // Styling the circle: 18px size, border-radius 50%
                 circle.style.cssText = `
-                    width: 14px;
-                    height: 14px;
+                    width: 18px;
+                    height: 18px;
                     border-radius: 50%;
                     border: 2px solid ${setData.color};
                     background-color: ${isHidden ? 'transparent' : setData.color};
@@ -1409,25 +1410,102 @@ drawBtn.addEventListener('click', (e) => {
         // List View Dropdown Panel Matrix
         const listBtn = document.getElementById('btn-list');
         const listPop = document.getElementById('chart-list-pop');
+        listPop.addEventListener('click', (e) => e.stopPropagation()); 
         listBtn.addEventListener('click', (e) => {
             if (listPop.style.display === 'block') {
                 listPop.style.display = 'none';
             } else {
-                listPop.innerHTML = '';
-                charts.forEach((c, idx) => {
-                    const d = document.createElement('div');
-                    d.className = 'btn-rect';
-                    d.style.marginBottom = '4px';
-                    d.style.justifyContent = 'flex-start';
-                    
-                    const baseAsset = c.symbol.replace("USDT", "");
-                    const tfLabel = c.interval === '15' ? '15m' : c.interval === '60' ? 'H1' : c.interval === '240' ? 'H4' : c.interval === 'D' ? 'D' : 'W';
-                    d.textContent = `${baseAsset} ${tfLabel} ${c.suffix || ""}`.trim();
-                    
-                    if (idx === activeIdx) d.style.borderColor = '#58a6ff';
-                    d.addEventListener('click', () => { switchChart(idx); listPop.style.display = 'none'; });
-                    listPop.appendChild(d);
+                listPop.innerHTML = `
+                    <div style="display: flex; gap: 8px; padding: 4px 6px 8px 6px; border-bottom: 1px solid #30363d; margin-bottom: 6px; font-size: 11px; align-items: center; justify-content: space-between;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;"><input type="checkbox" id="chk-default" ${chartFilterMode === 'default' ? 'checked' : ''}> Default</label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;"><input type="checkbox" id="chk-15" ${chartFilterMode === '15' ? 'checked' : ''}> 15m</label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;"><input type="checkbox" id="chk-h1" ${chartFilterMode === 'h1' ? 'checked' : ''}> H1</label>
+                    </div>
+                    <div id="chart-list-items" style="max-height: 250px; overflow-y: auto;"></div>
+                `;
+
+                const updateListContent = () => {
+                    const itemsContainer = listPop.querySelector('#chart-list-items');
+                    itemsContainer.innerHTML = '';
+
+                    let displayCharts = charts.map((c, idx) => ({ ...c, originalIdx: idx }));
+
+                    // Filter logic
+                    if (chartFilterMode === '15') {
+                        displayCharts = displayCharts.filter(c => c.interval === '15');
+                    } else if (chartFilterMode === 'h1') {
+                        displayCharts = displayCharts.filter(c => c.interval === '60');
+                    }
+
+                    // Default sort: Alphabetically by symbol, keeping same symbols together
+                    if (chartFilterMode === 'default') {
+                        displayCharts.sort((a, b) => {
+                            if (a.symbol !== b.symbol) return a.symbol.localeCompare(b.symbol);
+                            return a.interval.localeCompare(b.interval);
+                        });
+                    }
+
+                    if (displayCharts.length === 0) {
+                        itemsContainer.innerHTML = '<div style="padding: 8px; text-align: center; color: #8b949e; font-size: 11px;">No charts found</div>';
+                        return;
+                    }
+
+                    displayCharts.forEach((c) => {
+                        const d = document.createElement('div');
+                        d.className = 'btn-rect';
+                        d.style.marginBottom = '4px';
+                        d.style.justifyContent = 'flex-start';
+                        
+                        const baseAsset = c.symbol.replace("USDT", "");
+                        const tfLabel = c.interval === '15' ? '15m' : c.interval === '60' ? 'H1' : c.interval === '240' ? 'H4' : c.interval === 'D' ? 'D' : 'W';
+                        d.textContent = `${baseAsset} ${tfLabel} ${c.suffix || ""}`.trim();
+                        
+                        if (c.originalIdx === activeIdx) d.style.borderColor = '#58a6ff';
+                        d.addEventListener('click', () => { switchChart(c.originalIdx); listPop.style.display = 'none'; });
+                        itemsContainer.appendChild(d);
+                    });
+                };
+
+                updateListContent();
+
+                // Checkbox interaction bindings
+                listPop.querySelector('#chk-default').addEventListener('change', (ev) => {
+                    if (ev.target.checked) {
+                        chartFilterMode = 'default';
+                        listPop.querySelector('#chk-15').checked = false;
+                        listPop.querySelector('#chk-h1').checked = false;
+                        updateListContent();
+                    } else {
+                        ev.target.checked = true;
+                    }
                 });
+
+                listPop.querySelector('#chk-15').addEventListener('change', (ev) => {
+                    if (ev.target.checked) {
+                        chartFilterMode = '15';
+                        listPop.querySelector('#chk-default').checked = false;
+                        listPop.querySelector('#chk-h1').checked = false;
+                        updateListContent();
+                    } else {
+                        chartFilterMode = 'default';
+                        listPop.querySelector('#chk-default').checked = true;
+                        updateListContent();
+                    }
+                });
+
+                listPop.querySelector('#chk-h1').addEventListener('change', (ev) => {
+                    if (ev.target.checked) {
+                        chartFilterMode = 'h1';
+                        listPop.querySelector('#chk-default').checked = false;
+                        listPop.querySelector('#chk-15').checked = false;
+                        updateListContent();
+                    } else {
+                        chartFilterMode = 'default';
+                        listPop.querySelector('#chk-default').checked = true;
+                        updateListContent();
+                    }
+                });
+
                 listPop.style.display = 'block';
                 e.stopPropagation();
             }
